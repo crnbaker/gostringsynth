@@ -22,3 +22,11 @@ type source interface {
 	setStream(*portaudio.Stream)
 	synthesize(out [][]float32)
 }
+
+func NewSource(name string, sampleRate float64) (source, error) {
+	if name == "Sine" {
+		return NewStereoSine(sampleRate), nil
+	} else {
+		return nil, &InvalidSourceError{name}
+	}
+}
