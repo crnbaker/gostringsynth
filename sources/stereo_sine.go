@@ -17,10 +17,10 @@ type stereoSine struct {
 	PhaseR, FreqR float64
 }
 
-func (g *stereoSine) PlayNote(pitch float64) {
+func (g *stereoSine) PlayNote(pitch float64, amplitude float64) {
 	g.FreqL = pitch
 	g.FreqR = pitch
-	g.envelope.Trigger()
+	g.envelope.Trigger(amplitude)
 }
 
 func (g *stereoSine) setStream(stream *portaudio.Stream) {

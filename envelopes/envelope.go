@@ -2,7 +2,7 @@ package envelopes
 
 type Envelope interface {
 	//Causes the envelope to open
-	Trigger()
+	Trigger(amplitude float64)
 	//Returns current length of the envelope in samples
 	GetLength() int
 	//Returns the amplitude of the envelope at the current position of its internal play head
@@ -12,6 +12,7 @@ type Envelope interface {
 }
 
 type EnvelopeImpl struct {
+	scale      float64
 	amplitudes []float64
 	index      int
 }
@@ -23,14 +24,15 @@ func (e *EnvelopeImpl) GetLength() int {
 func (e *EnvelopeImpl) GetAmplitude() float64 {
 	var amplitude float64
 	if e.index < len(e.amplitudes) {
-		amplitude = e.amplitudes[e.index]
+		amplitude = e.amplitudes[e.index] * e.scale
 	} else {
 		amplitude = 0.0
 	}
 	return amplitude
 }
 
-func (e *EnvelopeImpl) Trigger() {
+func (e *EnvelopeImpl) Trigger(amplitude float64) {
+	e.scale = amplitude
 	e.index = 0
 }
 
@@ -39,5 +41,5 @@ func (e *EnvelopeImpl) Step() {
 }
 
 func NewEnvelope(amplitudes []float64) *EnvelopeImpl {
-	return &EnvelopeImpl{amplitudes, 0}
+	return &EnvelopeImpl{1.0, amplitudes, 0}
 }

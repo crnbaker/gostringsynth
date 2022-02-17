@@ -32,13 +32,13 @@ func main() {
 	errors.Chk(s.Start())
 
 	for i := 0; i < 4; i++ {
-		s.PlayNote(80 * float64(i+1) * 0.9)
+		s.PlayNote(80*float64(i+1)*0.9, 0.5)
 		time.Sleep(noteLength)
-		s.PlayNote(160 * float64(i+1) * 0.9)
+		s.PlayNote(160*float64(i+1)*0.9, 0.6)
 		time.Sleep(noteLength)
-		s.PlayNote(120 * float64(i+1) * 0.9)
+		s.PlayNote(120*float64(i+1)*0.9, 0.7)
 		time.Sleep(noteLength)
-		s.PlayNote(240 * float64(i+1) * 0.9)
+		s.PlayNote(240*float64(i+1)*0.9, 0.8)
 		time.Sleep(noteLength)
 	}
 }

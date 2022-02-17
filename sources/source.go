@@ -10,7 +10,7 @@ type Source interface {
 	Start() error
 	Stop() error
 	Close() error
-	PlayNote(pitch float64)
+	PlayNote(pitch float64, amplitude float64)
 	setStream(*portaudio.Stream)
 	synthesize(out [][]float32)
 }
