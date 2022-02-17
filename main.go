@@ -13,6 +13,7 @@ import (
 const sampleRate = 44100
 
 func shutdown(source sources.Source) {
+	time.Sleep(time.Millisecond * 250)
 	errors.Chk(source.Stop())
 	source.Close()
 	portaudio.Terminate()
@@ -20,23 +21,21 @@ func shutdown(source sources.Source) {
 
 func main() {
 	portaudio.Initialize()
-	s, err := sources.NewSource("Sine", sampleRate)
-	errors.Chk(err)
+
+	envelope := envelopes.NewTriangleEnvelope(0.1, 0.1, sampleRate)
+	s := sources.NewStereoSine(sampleRate, envelope)
 
 	defer shutdown(s)
 	errors.Chk(s.Start())
 
-	envelope := envelopes.NewTriangleEnvelope(0.1, 0.1, sampleRate)
-	s.SetEnvelope(envelope)
-
-	for i := 0; i < 8; i++ {
-		s.PlayNote(80)
+	for i := 0; i < 4; i++ {
+		s.PlayNote(80 * float64(i+1) * 0.9)
 		time.Sleep(time.Millisecond * 200)
-		s.PlayNote(160)
+		s.PlayNote(160 * float64(i+1) * 0.9)
 		time.Sleep(time.Millisecond * 200)
-		s.PlayNote(120)
+		s.PlayNote(120 * float64(i+1) * 0.9)
 		time.Sleep(time.Millisecond * 200)
-		s.PlayNote(240)
+		s.PlayNote(240 * float64(i+1) * 0.9)
 		time.Sleep(time.Millisecond * 200)
 	}
 }

@@ -10,15 +10,11 @@ import (
 )
 
 type stereoSine struct {
+	EnvelopedSource
 	*portaudio.Stream
 	SampleRate    float64
 	PhaseL, FreqL float64
 	PhaseR, FreqR float64
-	envelope      envelopes.Envelope
-}
-
-func (g *stereoSine) SetEnvelope(env envelopes.Envelope) {
-	g.envelope = env
 }
 
 func (g *stereoSine) PlayNote(pitch float64) {
@@ -50,7 +46,7 @@ func (g *stereoSine) synthesize(out [][]float32) {
 }
 
 func NewStereoSine(sampleRate float64, envelope envelopes.Envelope) *stereoSine {
-	s := &stereoSine{nil, sampleRate, 0, 0, 0, 0, envelope}
+	s := &stereoSine{NewEnvelopedSource(envelope), nil, sampleRate, 0, 0, 0, 0}
 	var err error
 	var stream *portaudio.Stream
 	stream, err = portaudio.OpenDefaultStream(0, 2, sampleRate, 0, s.synthesize)

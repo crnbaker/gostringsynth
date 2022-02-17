@@ -1,23 +1,7 @@
 package envelopes
 
 type triangleEnvelope struct {
-	envelope EnvelopeImpl
-}
-
-func (e *triangleEnvelope) GetLength() int {
-	return e.envelope.GetLength()
-}
-
-func (e *triangleEnvelope) GetAmplitude() float64 {
-	return e.envelope.GetAmplitude()
-}
-
-func (e *triangleEnvelope) Trigger() {
-	e.envelope.Trigger()
-}
-
-func (e *triangleEnvelope) Step() {
-	e.envelope.Step()
+	EnvelopeImpl
 }
 
 func NewTriangleEnvelope(attackInSeconds float64, decayInSeconds float64, sampleRate float64) *triangleEnvelope {
