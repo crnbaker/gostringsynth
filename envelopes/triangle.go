@@ -1,13 +1,15 @@
 package envelopes
 
+import "time"
+
 type triangleEnvelope struct {
 	EnvelopeImpl
 }
 
-func NewTriangleEnvelope(attackInSeconds float64, decayInSeconds float64, sampleRate float64) *triangleEnvelope {
+func NewTriangleEnvelope(attackTime time.Duration, decayTime time.Duration, sampleRate float64) *triangleEnvelope {
 
-	attackInSamples := int(attackInSeconds * sampleRate)
-	decayInSamples := int(decayInSeconds * sampleRate)
+	attackInSamples := int(attackTime.Seconds() * sampleRate)
+	decayInSamples := int(decayTime.Seconds() * sampleRate)
 
 	lengthInSamples := attackInSamples + decayInSamples
 	amps := make([]float64, lengthInSamples)

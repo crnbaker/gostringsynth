@@ -11,6 +11,8 @@ import (
 )
 
 const sampleRate = 44100
+const attackTime = time.Millisecond * 10
+const decayTime = time.Millisecond * 190
 
 func shutdown(source sources.Source) {
 	time.Sleep(time.Millisecond * 250)
@@ -22,20 +24,21 @@ func shutdown(source sources.Source) {
 func main() {
 	portaudio.Initialize()
 
-	envelope := envelopes.NewTriangleEnvelope(0.1, 0.1, sampleRate)
+	envelope := envelopes.NewTriangleEnvelope(attackTime, decayTime, sampleRate)
 	s := sources.NewStereoSine(sampleRate, envelope)
+	noteLength := attackTime + decayTime
 
 	defer shutdown(s)
 	errors.Chk(s.Start())
 
 	for i := 0; i < 4; i++ {
 		s.PlayNote(80 * float64(i+1) * 0.9)
-		time.Sleep(time.Millisecond * 200)
+		time.Sleep(noteLength)
 		s.PlayNote(160 * float64(i+1) * 0.9)
-		time.Sleep(time.Millisecond * 200)
+		time.Sleep(noteLength)
 		s.PlayNote(120 * float64(i+1) * 0.9)
-		time.Sleep(time.Millisecond * 200)
+		time.Sleep(noteLength)
 		s.PlayNote(240 * float64(i+1) * 0.9)
-		time.Sleep(time.Millisecond * 200)
+		time.Sleep(noteLength)
 	}
 }
