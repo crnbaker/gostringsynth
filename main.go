@@ -12,33 +12,39 @@ import (
 
 const sampleRate = 44100
 const attackTime = time.Millisecond * 10
-const decayTime = time.Millisecond * 190
+const decayTime = time.Millisecond * 2000
+const numVoices = 4
 
-func shutdown(source sources.Source) {
-	time.Sleep(time.Millisecond * 250)
-	errors.Chk(source.Stop())
-	source.Close()
+func shutdown(oscillators [numVoices]sources.Source) {
+	time.Sleep(time.Millisecond * 450)
+	for _, s := range oscillators {
+		errors.Chk(s.Stop())
+		s.Close()
+	}
 	portaudio.Terminate()
 }
 
 func main() {
 	portaudio.Initialize()
 
-	envelope := envelopes.NewTriangleEnvelope(attackTime, decayTime, sampleRate)
-	s := sources.NewStereoSine(sampleRate, envelope)
+	var oscillators [numVoices]sources.Source
+	for i := 0; i < numVoices; i++ {
+		envelope := envelopes.NewTriangleEnvelope(attackTime, decayTime, sampleRate)
+		s := sources.NewStereoSine(sampleRate, envelope)
+		errors.Chk(s.Start())
+		oscillators[i] = s
+	}
+	defer shutdown(oscillators)
 	noteLength := attackTime + decayTime
 
-	defer shutdown(s)
-	errors.Chk(s.Start())
+	go oscillators[0].PlayNote(80, 0.1)
+	time.Sleep(time.Millisecond * 60)
+	go oscillators[1].PlayNote(160, 0.1)
+	time.Sleep(time.Millisecond * 60)
+	go oscillators[2].PlayNote(120, 0.1)
+	time.Sleep(time.Millisecond * 60)
+	go oscillators[3].PlayNote(240, 0.1)
+	time.Sleep(time.Millisecond * 60)
 
-	for i := 0; i < 4; i++ {
-		s.PlayNote(80*float64(i+1)*0.9, 0.5)
-		time.Sleep(noteLength)
-		s.PlayNote(160*float64(i+1)*0.9, 0.6)
-		time.Sleep(noteLength)
-		s.PlayNote(120*float64(i+1)*0.9, 0.7)
-		time.Sleep(noteLength)
-		s.PlayNote(240*float64(i+1)*0.9, 0.8)
-		time.Sleep(noteLength)
-	}
+	time.Sleep(noteLength)
 }
