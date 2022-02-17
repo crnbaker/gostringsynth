@@ -11,22 +11,28 @@ import (
 
 const sampleRate = 44100
 
+func shutdown(source sources.Source) {
+	errors.Chk(source.Stop())
+	source.Close()
+	portaudio.Terminate()
+}
+
 func main() {
 	portaudio.Initialize()
-	defer portaudio.Terminate()
 	s, err := sources.NewSource("Sine", sampleRate)
 	errors.Chk(err)
-	defer s.Close()
+
+	defer shutdown(s)
 	errors.Chk(s.Start())
 
-	s.PlayNote(200, 0.2)
-	time.Sleep(time.Millisecond * 200)
-	s.PlayNote(400, 0.2)
-	time.Sleep(time.Millisecond * 200)
-	s.PlayNote(300, 0.2)
-	time.Sleep(time.Millisecond * 200)
-	s.PlayNote(600, 0.2)
-	time.Sleep(time.Millisecond * 500)
-
-	errors.Chk(s.Stop())
+	for i := 0; i < 8; i++ {
+		s.PlayNote(80, 0.15, 0.05)
+		time.Sleep(time.Millisecond * 200)
+		s.PlayNote(160, 0.15, 0.05)
+		time.Sleep(time.Millisecond * 200)
+		s.PlayNote(120, 0.15, 0.05)
+		time.Sleep(time.Millisecond * 200)
+		s.PlayNote(240, 0.15, 0.05)
+		time.Sleep(time.Millisecond * 200)
+	}
 }

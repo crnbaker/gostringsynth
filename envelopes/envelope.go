@@ -27,11 +27,19 @@ func (e *Envelope) Step() {
 	e.index += 1
 }
 
-func NewEnvelope(lengthInSamples int) Envelope {
+func NewEnvelope(lengthInSamples int, attackInSamples int) Envelope {
 	amps := make([]float32, lengthInSamples)
-	for i := range amps {
-		amplitude := (float32(lengthInSamples-i-1) / float32(lengthInSamples-1))
+
+	for i := 0; i < attackInSamples; i++ {
+		amps[i] = float32(i) / float32(attackInSamples-1)
+	}
+
+	decayInSamples := lengthInSamples - attackInSamples
+	decayIndex := 0
+	for i := attackInSamples; i < lengthInSamples; i++ {
+		amplitude := (float32(decayInSamples-decayIndex-1) / float32(decayInSamples-1))
 		amps[i] = amplitude
+		decayIndex++
 	}
 	return Envelope{amps, 0}
 }

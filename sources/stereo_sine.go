@@ -17,12 +17,13 @@ type stereoSine struct {
 	envelope      envelopes.Envelope
 }
 
-func (g *stereoSine) PlayNote(pitch float64, lengthInSeconds float64) {
+func (g *stereoSine) PlayNote(pitch float64, lengthInSeconds float64, attackInSeconds float64) {
 	g.FreqL = pitch
 	g.FreqR = pitch
 	lengthInSamples := int(lengthInSeconds * g.SampleRate)
+	attackInSamples := int(attackInSeconds * g.SampleRate)
 	if g.envelope.GetLength() != lengthInSamples {
-		g.envelope = envelopes.NewEnvelope(lengthInSamples)
+		g.envelope = envelopes.NewEnvelope(lengthInSamples, attackInSamples)
 	}
 	g.envelope.Trigger()
 }
@@ -50,7 +51,7 @@ func (g *stereoSine) synthesize(out [][]float32) {
 }
 
 func NewStereoSine(sampleRate float64) *stereoSine {
-	env := envelopes.NewEnvelope(1)
+	env := envelopes.NewEnvelope(1, 0)
 	s := &stereoSine{nil, sampleRate, 0, 0, 0, 0, env}
 	var err error
 	var stream *portaudio.Stream
