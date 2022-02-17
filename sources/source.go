@@ -3,6 +3,8 @@ package sources
 import (
 	"fmt"
 
+	"github.com/crnbaker/gostringsynth/envelopes"
+
 	"github.com/gordonklaus/portaudio"
 )
 
@@ -18,14 +20,16 @@ type Source interface {
 	Start() error
 	Stop() error
 	Close() error
-	PlayNote(pitch float64, lengthInSeconds float64, attackInSeconds float64)
+	PlayNote(pitch float64)
+	SetEnvelope(envelope envelopes.Envelope)
 	setStream(*portaudio.Stream)
 	synthesize(out [][]float32)
 }
 
 func NewSource(name string, sampleRate float64) (Source, error) {
+	env := envelopes.NewEnvelope(make([]float64, 1))
 	if name == "Sine" {
-		return NewStereoSine(sampleRate), nil
+		return NewStereoSine(sampleRate, env), nil
 	} else {
 		return nil, &InvalidSourceError{name}
 	}

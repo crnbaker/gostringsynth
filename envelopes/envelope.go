@@ -1,16 +1,27 @@
 package envelopes
 
-type Envelope struct {
-	amplitudes []float32
+type Envelope interface {
+	//Causes the envelope to open
+	Trigger()
+	//Returns current length of the envelope in samples
+	GetLength() int
+	//Returns the amplitude of the envelope at the current position of its internal play head
+	GetAmplitude() float64
+	//Steps the position of the internal play head forwards by one sample
+	Step()
+}
+
+type EnvelopeImpl struct {
+	amplitudes []float64
 	index      int
 }
 
-func (e *Envelope) GetLength() int {
+func (e *EnvelopeImpl) GetLength() int {
 	return len(e.amplitudes)
 }
 
-func (e *Envelope) GetAmplitude() float32 {
-	var amplitude float32
+func (e *EnvelopeImpl) GetAmplitude() float64 {
+	var amplitude float64
 	if e.index < len(e.amplitudes) {
 		amplitude = e.amplitudes[e.index]
 	} else {
@@ -19,27 +30,14 @@ func (e *Envelope) GetAmplitude() float32 {
 	return amplitude
 }
 
-func (e *Envelope) Trigger() {
+func (e *EnvelopeImpl) Trigger() {
 	e.index = 0
 }
 
-func (e *Envelope) Step() {
+func (e *EnvelopeImpl) Step() {
 	e.index += 1
 }
 
-func NewEnvelope(lengthInSamples int, attackInSamples int) Envelope {
-	amps := make([]float32, lengthInSamples)
-
-	for i := 0; i < attackInSamples; i++ {
-		amps[i] = float32(i) / float32(attackInSamples-1)
-	}
-
-	decayInSamples := lengthInSamples - attackInSamples
-	decayIndex := 0
-	for i := attackInSamples; i < lengthInSamples; i++ {
-		amplitude := (float32(decayInSamples-decayIndex-1) / float32(decayInSamples-1))
-		amps[i] = amplitude
-		decayIndex++
-	}
-	return Envelope{amps, 0}
+func NewEnvelope(amplitudes []float64) *EnvelopeImpl {
+	return &EnvelopeImpl{amplitudes, 0}
 }

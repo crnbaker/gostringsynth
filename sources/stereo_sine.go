@@ -17,14 +17,13 @@ type stereoSine struct {
 	envelope      envelopes.Envelope
 }
 
-func (g *stereoSine) PlayNote(pitch float64, lengthInSeconds float64, attackInSeconds float64) {
+func (g *stereoSine) SetEnvelope(env envelopes.Envelope) {
+	g.envelope = env
+}
+
+func (g *stereoSine) PlayNote(pitch float64) {
 	g.FreqL = pitch
 	g.FreqR = pitch
-	lengthInSamples := int(lengthInSeconds * g.SampleRate)
-	attackInSamples := int(attackInSeconds * g.SampleRate)
-	if g.envelope.GetLength() != lengthInSamples {
-		g.envelope = envelopes.NewEnvelope(lengthInSamples, attackInSamples)
-	}
 	g.envelope.Trigger()
 }
 
@@ -42,17 +41,16 @@ func (g *stereoSine) stepR() float64 {
 
 func (g *stereoSine) synthesize(out [][]float32) {
 	for i := range out[0] {
-		out[0][i] = float32(math.Sin(2*math.Pi*g.PhaseL)) * g.envelope.GetAmplitude()
+		out[0][i] = float32(math.Sin(2*math.Pi*g.PhaseL)) * float32(g.envelope.GetAmplitude())
 		_, g.PhaseL = math.Modf(g.PhaseL + g.stepL())
-		out[1][i] = float32(math.Sin(2*math.Pi*g.PhaseR)) * g.envelope.GetAmplitude()
+		out[1][i] = float32(math.Sin(2*math.Pi*g.PhaseR)) * float32(g.envelope.GetAmplitude())
 		_, g.PhaseR = math.Modf(g.PhaseR + g.stepR())
 		g.envelope.Step()
 	}
 }
 
-func NewStereoSine(sampleRate float64) *stereoSine {
-	env := envelopes.NewEnvelope(1, 0)
-	s := &stereoSine{nil, sampleRate, 0, 0, 0, 0, env}
+func NewStereoSine(sampleRate float64, envelope envelopes.Envelope) *stereoSine {
+	s := &stereoSine{nil, sampleRate, 0, 0, 0, 0, envelope}
 	var err error
 	var stream *portaudio.Stream
 	stream, err = portaudio.OpenDefaultStream(0, 2, sampleRate, 0, s.synthesize)
