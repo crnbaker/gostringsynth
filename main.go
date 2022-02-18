@@ -24,27 +24,36 @@ func shutdown(oscillators [numVoices]sources.Source) {
 	portaudio.Terminate()
 }
 
+func makeAndPlay(pitch float64, sourceOutChan chan sources.Source) {
+	envelope := envelopes.NewTriangleEnvelope(attackTime, decayTime, sampleRate)
+	s := sources.NewStereoSine(sampleRate, envelope)
+	errors.Chk(s.Start())
+	s.PlayNote(pitch, 0.1)
+	sourceOutChan <- s
+}
+
 func main() {
 	portaudio.Initialize()
 
-	var oscillators [numVoices]sources.Source
-	for i := 0; i < numVoices; i++ {
-		envelope := envelopes.NewTriangleEnvelope(attackTime, decayTime, sampleRate)
-		s := sources.NewStereoSine(sampleRate, envelope)
-		errors.Chk(s.Start())
-		oscillators[i] = s
-	}
-	defer shutdown(oscillators)
 	noteLength := attackTime + decayTime
+	returnedSourcesChan := make(chan sources.Source)
+	var returnedSources [numVoices]sources.Source
 
-	go oscillators[0].PlayNote(80, 0.1)
+	go makeAndPlay(80, returnedSourcesChan)
 	time.Sleep(time.Millisecond * 60)
-	go oscillators[1].PlayNote(160, 0.1)
+	go makeAndPlay(160, returnedSourcesChan)
 	time.Sleep(time.Millisecond * 60)
-	go oscillators[2].PlayNote(120, 0.1)
+	go makeAndPlay(120, returnedSourcesChan)
 	time.Sleep(time.Millisecond * 60)
-	go oscillators[3].PlayNote(240, 0.1)
+	go makeAndPlay(240, returnedSourcesChan)
 	time.Sleep(time.Millisecond * 60)
 
 	time.Sleep(noteLength)
+
+	for i := 0; i < 4; i++ {
+		returnedSource := <-returnedSourcesChan
+		returnedSources[i] = returnedSource
+	}
+
+	shutdown(returnedSources)
 }
