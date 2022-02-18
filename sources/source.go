@@ -5,7 +5,7 @@ import (
 )
 
 type SynthFunction struct {
-	Synthesize        func([][]float32)
+	Synthesize        func() float32
 	AgeInSamples      int
 	LifetimeInSamples int
 }
