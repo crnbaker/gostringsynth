@@ -1,59 +1,28 @@
 package main
 
 import (
-	"time"
+	"fmt"
 
-	"github.com/crnbaker/gostringsynth/envelopes"
-	"github.com/crnbaker/gostringsynth/errors"
+	"github.com/crnbaker/gostringsynth/keypress"
 	"github.com/crnbaker/gostringsynth/sources"
+	"github.com/crnbaker/gostringsynth/voicecontrol"
 
 	"github.com/gordonklaus/portaudio"
 )
 
 const sampleRate = 44100
-const attackTime = time.Millisecond * 10
-const decayTime = time.Millisecond * 2000
-const numVoices = 4
-
-func shutdown(oscillators [numVoices]sources.Source) {
-	time.Sleep(time.Millisecond * 450)
-	for _, s := range oscillators {
-		errors.Chk(s.Stop())
-		s.Close()
-	}
-	portaudio.Terminate()
-}
-
-func makeAndPlay(pitch float64, sourceOutChan chan sources.Source) {
-	envelope := envelopes.NewTriangleEnvelope(attackTime, decayTime, sampleRate)
-	s := sources.NewStereoSine(sampleRate, envelope)
-	errors.Chk(s.Start())
-	s.PlayNote(pitch, 0.1)
-	sourceOutChan <- s
-}
 
 func main() {
 	portaudio.Initialize()
 
-	noteLength := attackTime + decayTime
-	returnedSourcesChan := make(chan sources.Source)
-	var returnedSources [numVoices]sources.Source
+	closeVoiceChan := make(chan sources.Source)
+	newNoteChan := make(chan float64)
+	quitChan := make(chan bool)
 
-	go makeAndPlay(80, returnedSourcesChan)
-	time.Sleep(time.Millisecond * 60)
-	go makeAndPlay(160, returnedSourcesChan)
-	time.Sleep(time.Millisecond * 60)
-	go makeAndPlay(120, returnedSourcesChan)
-	time.Sleep(time.Millisecond * 60)
-	go makeAndPlay(240, returnedSourcesChan)
-	time.Sleep(time.Millisecond * 60)
+	go voicecontrol.NoteDispatcher(newNoteChan, closeVoiceChan, quitChan, sampleRate)
+	go keypress.KeyDispatcher(newNoteChan)
 
-	time.Sleep(noteLength)
-
-	for i := 0; i < 4; i++ {
-		returnedSource := <-returnedSourcesChan
-		returnedSources[i] = returnedSource
+	for range quitChan {
+		fmt.Println("not quitting")
 	}
-
-	shutdown(returnedSources)
 }
