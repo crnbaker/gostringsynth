@@ -2,17 +2,25 @@ package sources
 
 import (
 	"github.com/crnbaker/gostringsynth/envelopes"
-
-	"github.com/gordonklaus/portaudio"
 )
 
+type SynthFunction struct {
+	Synthesize        func() float32
+	AgeInSamples      int
+	LifetimeInSamples int
+}
+
 type Source interface {
-	Start() error
-	Stop() error
-	Close() error
-	PlayNote(pitch float64, amplitude float64)
-	setStream(*portaudio.Stream)
+	Play(pitch float64, amplitude float64)
 	synthesize(out [][]float32)
+}
+
+type SourceImpl struct {
+	synthFunctionOutputChannel chan SynthFunction
+}
+
+func NewSourceImpl(synthFunctionOutputChannel chan SynthFunction) SourceImpl {
+	return SourceImpl{synthFunctionOutputChannel}
 }
 
 type EnvelopedSource struct {
