@@ -8,19 +8,19 @@ import (
 
 type Mixer struct {
 	*portaudio.Stream
-	synthFunctions []sources.SynthFunction
+	voices []sources.Voice
 }
 
 func (m *Mixer) addStream(stream *portaudio.Stream) {
 	m.Stream = stream
 }
 
-func (m *Mixer) addSynthFunction(synthFunction sources.SynthFunction) {
-	m.synthFunctions = append(m.synthFunctions, synthFunction)
+func (m *Mixer) addVoice(synthFunction sources.Voice) {
+	m.voices = append(m.voices, synthFunction)
 }
 
-func (m *Mixer) deleteSynthFunctionByIndex(i int) {
-	m.synthFunctions = append(m.synthFunctions[:i], m.synthFunctions[i+1:]...)
+func (m *Mixer) deleteVoice(i int) {
+	m.voices = append(m.voices[:i], m.voices[i+1:]...)
 }
 
 func (m *Mixer) output(out [][]float32) {
@@ -31,18 +31,18 @@ func (m *Mixer) output(out [][]float32) {
 	}
 	// Add samples values synthesized by currently active voices
 	for i := range out[0] {
-		for j, f := range m.synthFunctions {
+		for j, f := range m.voices {
 			newSample := f.Synthesize()
 			out[0][i] += newSample
 			out[1][i] += newSample
-			m.synthFunctions[j].AgeInSamples++ // Use index because f is a copy
+			m.voices[j].AgeInSamples++ // Use index because f is a copy
 		}
 	}
 	// Destroy voices that are past their lifetime
 	numRemoved := 0
-	for i, f := range m.synthFunctions {
+	for i, f := range m.voices {
 		if f.AgeInSamples > f.LifetimeInSamples {
-			m.deleteSynthFunctionByIndex(i - numRemoved)
+			m.deleteVoice(i - numRemoved)
 			numRemoved++
 		}
 	}
@@ -50,7 +50,7 @@ func (m *Mixer) output(out [][]float32) {
 
 func newMixer(sampleRate float64) *Mixer {
 
-	synthFunctions := make([]sources.SynthFunction, 0)
+	synthFunctions := make([]sources.Voice, 0)
 
 	mixer := &Mixer{nil, synthFunctions}
 
@@ -60,10 +60,10 @@ func newMixer(sampleRate float64) *Mixer {
 	return mixer
 }
 
-func MixController(synthFunctionReceiveChannel chan sources.SynthFunction, sampleRate float64) {
+func MixController(voiceReceiveChan chan sources.Voice, sampleRate float64) {
 	mixer := newMixer(sampleRate)
 	mixer.Start()
-	for f := range synthFunctionReceiveChannel {
-		mixer.addSynthFunction(f)
+	for f := range voiceReceiveChan {
+		mixer.addVoice(f)
 	}
 }

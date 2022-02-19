@@ -5,8 +5,8 @@ import (
 
 	"github.com/crnbaker/gostringsynth/keypress"
 	"github.com/crnbaker/gostringsynth/mixer"
+	"github.com/crnbaker/gostringsynth/notedispatcher"
 	"github.com/crnbaker/gostringsynth/sources"
-	"github.com/crnbaker/gostringsynth/voicecontrol"
 
 	"github.com/gordonklaus/portaudio"
 )
@@ -18,10 +18,10 @@ func main() {
 
 	newNoteChan := make(chan float64)
 	quitChan := make(chan bool)
-	synthFunctionChan := make(chan sources.SynthFunction)
+	synthFunctionChan := make(chan sources.Voice)
 
 	go mixer.MixController(synthFunctionChan, sampleRate)
-	go voicecontrol.NoteDispatcher(newNoteChan, synthFunctionChan, quitChan, sampleRate)
+	go notedispatcher.NoteDispatcher(newNoteChan, synthFunctionChan, quitChan, sampleRate)
 	go keypress.KeyDispatcher(newNoteChan)
 
 	for range quitChan {

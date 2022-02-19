@@ -4,23 +4,17 @@ import (
 	"github.com/crnbaker/gostringsynth/envelopes"
 )
 
-type SynthFunction struct {
-	Synthesize        func() float32
-	AgeInSamples      int
-	LifetimeInSamples int
-}
-
 type Source interface {
 	Play(pitch float64, amplitude float64)
 	synthesize(out [][]float32)
 }
 
 type SourceImpl struct {
-	synthFunctionOutputChannel chan SynthFunction
+	voiceSendChan chan Voice
 }
 
-func NewSourceImpl(synthFunctionOutputChannel chan SynthFunction) SourceImpl {
-	return SourceImpl{synthFunctionOutputChannel}
+func NewSourceImpl(voiceSendChan chan Voice) SourceImpl {
+	return SourceImpl{voiceSendChan}
 }
 
 type EnvelopedSource struct {

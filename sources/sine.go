@@ -15,7 +15,7 @@ type sineSource struct {
 
 func (g *sineSource) Play(pitch float64, amplitude float64) {
 	lifetime := int(float64(g.envelope.GetLength()) * 1.1)
-	g.synthFunctionOutputChannel <- SynthFunction{g.Synthesize, 0, lifetime}
+	g.voiceSendChan <- Voice{g.Synthesize, 0, lifetime}
 	g.Freq = pitch
 	g.envelope.Trigger(amplitude)
 }
@@ -31,7 +31,7 @@ func (g *sineSource) Synthesize() (sampleValue float32) {
 	return
 }
 
-func NewSineSource(sampleRate float64, envelope envelopes.Envelope, outputChannel chan SynthFunction) *sineSource {
-	s := &sineSource{NewSourceImpl(outputChannel), NewEnvelopedSource(envelope), sampleRate, 0, 0}
+func NewSineSource(sampleRate float64, envelope envelopes.Envelope, voiceSendChan chan Voice) *sineSource {
+	s := &sineSource{NewSourceImpl(voiceSendChan), NewEnvelopedSource(envelope), sampleRate, 0, 0}
 	return s
 }
