@@ -66,4 +66,6 @@ func MixController(voiceReceiveChan chan sources.Voice, sampleRate float64) {
 	for f := range voiceReceiveChan {
 		mixer.addVoice(f)
 	}
+	mixer.Stop()
+	portaudio.Terminate()
 }
