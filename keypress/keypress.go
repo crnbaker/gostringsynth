@@ -7,7 +7,7 @@ import (
 	tty "github.com/mattn/go-tty"
 )
 
-func KeyDispatcher(noteChannel chan float64) {
+func KeyDispatcher(noteSendChannel chan float64) {
 	tty, err := tty.Open()
 	errors.Chk(err)
 	defer tty.Close()
@@ -18,13 +18,13 @@ func KeyDispatcher(noteChannel chan float64) {
 		fmt.Println(r, " key pressed")
 		switch r {
 		case 'a':
-			noteChannel <- 100
+			noteSendChannel <- 100
 		case 's':
-			noteChannel <- 200
+			noteSendChannel <- 200
 		case 'd':
-			noteChannel <- 300
+			noteSendChannel <- 300
 		case 'q':
-			close(noteChannel)
+			close(noteSendChannel)
 		}
 	}
 }

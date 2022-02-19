@@ -16,13 +16,13 @@ const sampleRate = 44100
 func main() {
 	portaudio.Initialize()
 
-	newNoteChan := make(chan float64)
+	noteChan := make(chan float64)
 	quitChan := make(chan bool)
-	synthFunctionChan := make(chan sources.Voice)
+	voiceChan := make(chan sources.Voice)
 
-	go mixer.MixController(synthFunctionChan, sampleRate)
-	go notedispatcher.NoteDispatcher(newNoteChan, synthFunctionChan, quitChan, sampleRate)
-	go keypress.KeyDispatcher(newNoteChan)
+	go mixer.MixController(voiceChan, sampleRate)
+	go notedispatcher.NoteDispatcher(noteChan, voiceChan, quitChan, sampleRate)
+	go keypress.KeyDispatcher(noteChan)
 
 	for range quitChan {
 		fmt.Println("not quitting")
