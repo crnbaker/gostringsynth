@@ -19,7 +19,7 @@ func (m *Mixer) addVoice(synthFunction sources.Voice) {
 	m.voices = append(m.voices, synthFunction)
 }
 
-func (m *Mixer) deleteVoice(i int) {
+func (m *Mixer) killVoice(i int) {
 	m.voices = append(m.voices[:i], m.voices[i+1:]...)
 }
 
@@ -38,12 +38,12 @@ func (m *Mixer) output(out [][]float32) {
 			m.voices[j].AgeInSamples++ // Use index because f is a copy
 		}
 	}
-	// Destroy voices that are past their lifetime
-	numRemoved := 0
+	// Kill voices that are past their lifetime
+	numKilled := 0
 	for i, f := range m.voices {
-		if f.AgeInSamples > f.LifetimeInSamples {
-			m.deleteVoice(i - numRemoved)
-			numRemoved++
+		if f.ShouldDie() {
+			m.killVoice(i - numKilled)
+			numKilled++
 		}
 	}
 }

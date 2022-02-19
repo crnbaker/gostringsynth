@@ -5,3 +5,7 @@ type Voice struct {
 	AgeInSamples      int
 	LifetimeInSamples int
 }
+
+func (v *Voice) ShouldDie() bool {
+	return v.AgeInSamples > v.LifetimeInSamples
+}
