@@ -5,16 +5,16 @@ import (
 )
 
 type Source interface {
-	Play(pitch float64, amplitude float64)
-	synthesize(out [][]float32)
+	DispatchAndPlayVoice(pitch float64, amplitude float64)
+	Synthesize(out [][]float32)
 }
 
-type SourceImpl struct {
+type VoiceSource struct {
 	voiceSendChan chan Voice
 }
 
-func NewSourceImpl(voiceSendChan chan Voice) SourceImpl {
-	return SourceImpl{voiceSendChan}
+func NewVoiceSource(voiceSendChan chan Voice) VoiceSource {
+	return VoiceSource{voiceSendChan}
 }
 
 type EnvelopedSource struct {

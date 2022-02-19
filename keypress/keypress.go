@@ -23,7 +23,7 @@ var letterPitchMap = map[rune]int{
 	'k': 12,
 }
 
-func KeyDispatcher(noteSendChannel chan MidiNote) {
+func NoteDispatcher(noteSendChannel chan MidiNote) {
 
 	octave := 2
 	velocity := 64

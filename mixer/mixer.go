@@ -32,7 +32,7 @@ func (m *Mixer) output(out [][]float32) {
 	// Add samples values synthesized by currently active voices
 	for i := range out[0] {
 		for j, f := range m.voices {
-			newSample := f.Synthesize()
+			newSample := f.SynthesisFunc()
 			out[0][i] += newSample
 			out[1][i] += newSample
 			m.voices[j].AgeInSamples++ // Use index because f is a copy
