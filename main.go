@@ -16,7 +16,7 @@ const sampleRate = 44100
 func main() {
 	portaudio.Initialize()
 
-	noteChan := make(chan float64)
+	noteChan := make(chan keypress.MidiNote)
 	quitChan := make(chan bool)
 	voiceChan := make(chan sources.Voice)
 
