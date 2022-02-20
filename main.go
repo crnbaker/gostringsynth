@@ -12,6 +12,7 @@ import (
 )
 
 const sampleRate = 44100
+const voiceLimit = 8
 
 func main() {
 	portaudio.Initialize()
@@ -20,7 +21,7 @@ func main() {
 	noteChan := make(chan keypress.MidiNote)
 	quitChan := make(chan bool)
 
-	go mixer.MixController(voiceChan, sampleRate)
+	go mixer.MixController(voiceChan, sampleRate, voiceLimit)
 	go voicedispatcher.VoiceDispatcher(noteChan, voiceChan, quitChan, sampleRate, "string")
 	go keypress.NoteDispatcher(noteChan)
 

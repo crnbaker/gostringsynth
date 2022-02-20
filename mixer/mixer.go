@@ -60,10 +60,13 @@ func newMixer(sampleRate float64) *Mixer {
 	return mixer
 }
 
-func MixController(voiceReceiveChan chan sources.Voice, sampleRate float64) {
+func MixController(voiceReceiveChan chan sources.Voice, sampleRate float64, voiceLimit int) {
 	mixer := newMixer(sampleRate)
 	mixer.Start()
 	for f := range voiceReceiveChan {
+		if len(mixer.voices) == voiceLimit {
+			mixer.killVoice(0)
+		}
 		mixer.addVoice(f)
 	}
 	mixer.Stop()
