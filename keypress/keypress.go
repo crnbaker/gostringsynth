@@ -2,6 +2,7 @@ package keypress
 
 import (
 	"fmt"
+	"sync"
 
 	"github.com/crnbaker/gostringsynth/errors"
 	tty "github.com/mattn/go-tty"
@@ -23,9 +24,11 @@ var letterPitchMap = map[rune]int{
 	'k': 12,
 }
 
-func NoteDispatcher(noteSendChannel chan MidiNote) {
+func NoteDispatcher(waitGroup *sync.WaitGroup, noteSendChannel chan MidiNote) {
 
-	octave := 2
+	defer waitGroup.Done()
+
+	octave := 3
 	velocity := 64
 
 	tty, err := tty.Open()
@@ -35,10 +38,11 @@ func NoteDispatcher(noteSendChannel chan MidiNote) {
 	fmt.Println("Play notes with keyboard mapped across keys from A to K")
 	fmt.Println("Increase octave with X")
 	fmt.Println("Decrease octave with Z")
-	fmt.Println("Increase velocity with >")
-	fmt.Println("Increase velocity with <")
+	fmt.Println("Increase velocity with V")
+	fmt.Println("Decrease velocity with C")
 	fmt.Println("Q to quit")
 
+UserInputLoop:
 	for {
 		letter, err := tty.ReadRune()
 		errors.Chk(err)
@@ -49,17 +53,18 @@ func NoteDispatcher(noteSendChannel chan MidiNote) {
 			switch letter {
 			case 'q':
 				close(noteSendChannel)
+				break UserInputLoop
 			case 'x':
 				octave++
 			case 'z':
 				octave--
-			case '.':
+			case 'v':
 				velocity += 5
 				if velocity > 127 {
 					velocity = 127
 				}
 				fmt.Println("Velocity increased to", velocity)
-			case ',':
+			case 'c':
 				velocity -= 5
 				if velocity < 0 {
 					velocity = 0

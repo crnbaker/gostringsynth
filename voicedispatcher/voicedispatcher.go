@@ -1,6 +1,7 @@
 package voicedispatcher
 
 import (
+	"sync"
 	"time"
 
 	"github.com/crnbaker/gostringsynth/envelopes"
@@ -8,7 +9,8 @@ import (
 	"github.com/crnbaker/gostringsynth/sources"
 )
 
-func VoiceDispatcher(noteInChan chan keypress.MidiNote, voiceSendChan chan sources.Voice, quitChan chan bool, sampleRate float64, osc string) {
+func VoiceDispatcher(waitGroup *sync.WaitGroup, noteInChan chan keypress.MidiNote, voiceSendChan chan sources.Voice, sampleRate float64, osc string) {
+	defer waitGroup.Done()
 	for note := range noteInChan {
 		if osc == "sine" {
 			go spawnSineVoiceSource(note, voiceSendChan, sampleRate)
@@ -16,7 +18,6 @@ func VoiceDispatcher(noteInChan chan keypress.MidiNote, voiceSendChan chan sourc
 			go spawnStringVoiceSource(note, voiceSendChan, sampleRate)
 		}
 	}
-	close(quitChan)
 	close(voiceSendChan)
 }
 
@@ -28,8 +29,8 @@ func spawnSineVoiceSource(note keypress.MidiNote, voiceSendChan chan sources.Voi
 
 func spawnStringVoiceSource(note keypress.MidiNote, voiceSendChan chan sources.Voice, sampleRate float64) {
 	const waveSpeedMpS = 200
-	const pickupPos = 0.2
-	const decayTimeS = 5.0
+	const pickupPos = 0.5
+	const decayTimeS = 3.0
 	lengthM := sources.FreqToStringLength(keypress.MidiPitchToFreq(note.Pitch), waveSpeedMpS)
 	s := sources.NewStringVoiceSource(sampleRate, voiceSendChan, lengthM, waveSpeedMpS, pickupPos, decayTimeS)
 	s.DispatchAndPlayVoice(keypress.MidiPitchToFreq(note.Pitch), keypress.MidiVelocityToAmplitude(note.Velocity))

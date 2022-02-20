@@ -1,6 +1,8 @@
 package mixer
 
 import (
+	"sync"
+
 	"github.com/crnbaker/gostringsynth/errors"
 	"github.com/crnbaker/gostringsynth/sources"
 	"github.com/gordonklaus/portaudio"
@@ -60,7 +62,8 @@ func newMixer(sampleRate float64) *Mixer {
 	return mixer
 }
 
-func MixController(voiceReceiveChan chan sources.Voice, sampleRate float64, voiceLimit int) {
+func MixController(waitGroup *sync.WaitGroup, voiceReceiveChan chan sources.Voice, sampleRate float64, voiceLimit int) {
+	defer waitGroup.Done()
 	mixer := newMixer(sampleRate)
 	mixer.Start()
 	for f := range voiceReceiveChan {

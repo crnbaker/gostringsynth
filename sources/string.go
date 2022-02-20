@@ -1,7 +1,6 @@
 package sources
 
 import (
-	"fmt"
 	"math"
 )
 
@@ -63,8 +62,6 @@ func (s *stringVoiceSource) stepGrid() {
 
 func (s *stringVoiceSource) pluck(amplitude float64) {
 	pluckPoint := int(math.Floor(float64(len(s.fdtdGrid[0])) / 2))
-	fmt.Println("Plucking string at", pluckPoint)
-	fmt.Println("FTDT grid has", len(s.fdtdGrid), "time stamps and", len(s.fdtdGrid[0]), "spatial points.")
 	for i := 0; i <= pluckPoint; i++ {
 		s.fdtdGrid[0][i] = amplitude * float64(i) / float64(pluckPoint)
 		s.fdtdGrid[1][i] = amplitude * float64(i) / float64(pluckPoint)
@@ -86,9 +83,6 @@ func NewStringVoiceSource(sampleRate float64, voiceSendChan chan Voice, lengthM 
 	}
 
 	numSpatialSections := int(math.Floor(lengthM / (waveSpeedMpS * (1 / sampleRate)))) // Stability condition
-	fmt.Println("Making string with", numSpatialSections, "sections that is", lengthM, "meters long.")
-	fmt.Println("Wavespeed is ", waveSpeedMpS, "m/s")
-
 	s := stringVoiceSource{
 		NewVoiceSource(voiceSendChan),
 		NewFTDTSource(3, numSpatialSections),
@@ -98,7 +92,6 @@ func NewStringVoiceSource(sampleRate float64, voiceSendChan chan Voice, lengthM 
 		pickupPosFrac,
 		decayTimeS,
 	}
-	fmt.Println("Plucking string with", len(s.fdtdGrid[0]), "spatial points")
 	return s
 }
 
