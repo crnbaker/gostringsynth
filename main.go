@@ -21,7 +21,7 @@ func main() {
 	quitChan := make(chan bool)
 
 	go mixer.MixController(voiceChan, sampleRate)
-	go voicedispatcher.VoiceDispatcher(noteChan, voiceChan, quitChan, sampleRate)
+	go voicedispatcher.VoiceDispatcher(noteChan, voiceChan, quitChan, sampleRate, "string")
 	go keypress.NoteDispatcher(noteChan)
 
 	for range quitChan {

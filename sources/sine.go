@@ -13,21 +13,24 @@ type sineVoiceSource struct {
 	Phase, Freq float64
 }
 
-func (g *sineVoiceSource) DispatchAndPlayVoice(pitch float64, amplitude float64) {
-	lifetime := int(float64(g.envelope.GetLength()) * 1.1)
-	g.voiceSendChan <- Voice{g.Synthesize, 0, lifetime}
-	g.Freq = pitch
-	g.envelope.Trigger(amplitude)
+func (s *sineVoiceSource) calculateVoiceLifetime() int {
+	return int(float64(s.envelope.GetLength()) * 1.1)
 }
 
-func (g *sineVoiceSource) step() float64 {
-	return g.Freq / g.SampleRate
+func (s *sineVoiceSource) DispatchAndPlayVoice(freqHz float64, amplitude float64) {
+	s.voiceSendChan <- Voice{s.Synthesize, 0, s.calculateVoiceLifetime()}
+	s.Freq = freqHz
+	s.envelope.Trigger(amplitude)
 }
 
-func (g *sineVoiceSource) Synthesize() (sampleValue float32) {
-	sampleValue = float32(math.Sin(2*math.Pi*g.Phase)) * float32(g.envelope.GetAmplitude())
-	_, g.Phase = math.Modf(g.Phase + g.step())
-	g.envelope.Step()
+func (s *sineVoiceSource) step() float64 {
+	return s.Freq / s.SampleRate
+}
+
+func (s *sineVoiceSource) Synthesize() (sampleValue float32) {
+	sampleValue = float32(math.Sin(2*math.Pi*s.Phase)) * float32(s.envelope.GetAmplitude())
+	_, s.Phase = math.Modf(s.Phase + s.step())
+	s.envelope.Step()
 	return
 }
 
