@@ -7,8 +7,6 @@ import (
 	"github.com/crnbaker/gostringsynth/mixer"
 	"github.com/crnbaker/gostringsynth/sources"
 	"github.com/crnbaker/gostringsynth/voicedispatcher"
-
-	"github.com/gordonklaus/portaudio"
 )
 
 const sampleRate = 44100
@@ -17,7 +15,6 @@ const voiceLimit = 8
 func main() {
 	var wg sync.WaitGroup
 	wg.Add(3)
-	portaudio.Initialize()
 
 	voiceChan := make(chan sources.Voice)
 	noteChan := make(chan keypress.MidiNote)
