@@ -18,7 +18,7 @@ func (s *sineVoiceSource) calculateVoiceLifetime() int {
 }
 
 func (s *sineVoiceSource) DispatchAndPlayVoice(freqHz float64, amplitude float64) {
-	s.voiceSendChan <- Voice{s.Synthesize, 0, s.calculateVoiceLifetime()}
+	s.voiceSendChan <- Voice{s.Synthesize, 0, s.calculateVoiceLifetime(), false}
 	s.Freq = freqHz
 	s.envelope.Trigger(amplitude)
 }

@@ -25,7 +25,7 @@ func (s *stringVoiceSource) calculateVoiceLifetime() int {
 }
 
 func (s *stringVoiceSource) DispatchAndPlayVoice(freqHz float64, amplitude float64) {
-	s.voiceSendChan <- Voice{s.Synthesize, 0, s.calculateVoiceLifetime()}
+	s.voiceSendChan <- Voice{s.Synthesize, 0, s.calculateVoiceLifetime(), false}
 	s.pluck(amplitude)
 }
 
