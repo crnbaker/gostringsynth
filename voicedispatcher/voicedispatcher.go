@@ -24,7 +24,7 @@ func VoiceDispatcher(waitGroup *sync.WaitGroup, noteInChan chan notes.MidiNote, 
 func spawnSineVoiceSource(note notes.MidiNote, voiceSendChan chan sources.Voice, sampleRate float64) {
 	envelope := envelopes.NewTriangleEnvelope(time.Millisecond*100, time.Millisecond*400, sampleRate)
 	s := sources.NewSineVoiceSource(sampleRate, envelope, voiceSendChan)
-	s.DispatchAndPlayVoice(notes.MidiPitchToFreq(note.Pitch), notes.MidiVelocityToAmplitude(note.Velocity))
+	s.PublishVoice(notes.MidiPitchToFreq(note.Pitch), notes.MidiVelocityToAmplitude(note.Velocity))
 }
 
 func spawnStringVoiceSource(note notes.MidiNote, voiceSendChan chan sources.Voice, sampleRate float64) {
@@ -32,6 +32,6 @@ func spawnStringVoiceSource(note notes.MidiNote, voiceSendChan chan sources.Voic
 	const pickupPos = 0.5
 	const decayTimeS = 3.0
 	lengthM := sources.FreqToStringLength(notes.MidiPitchToFreq(note.Pitch), waveSpeedMpS)
-	s := sources.NewStringVoiceSource(sampleRate, voiceSendChan, lengthM, waveSpeedMpS, pickupPos, decayTimeS)
-	s.DispatchAndPlayVoice(notes.MidiPitchToFreq(note.Pitch), notes.MidiVelocityToAmplitude(note.Velocity))
+	s := sources.NewStringSource(sampleRate, voiceSendChan, lengthM, waveSpeedMpS, pickupPos, decayTimeS)
+	s.PublishVoice(notes.MidiPitchToFreq(note.Pitch), notes.MidiVelocityToAmplitude(note.Velocity))
 }

@@ -1,7 +1,7 @@
 /*
 The notes package provides structs and functions for converting user input published MIDI notes.
 
-The entrypoint is NotePublisher, a function that listens for keypresses, publishing a MIDI note to
+The entrypoint is PublishNotes, a function that listens for keypresses, publishing a MIDI note to
 a channel each time a key is pressed. The package also provides the MidiNote type - a struct that
 holds pitch and velocity - and functions for converting from these values to frequency and amplitude.
 */
@@ -32,8 +32,8 @@ var letterPitchMap = map[rune]int{
 	'k': 12,
 }
 
-// NotePublisher listens for key presses and publishes MIDI notes to noteChannel until user quits
-func NotePublisher(waitGroup *sync.WaitGroup, noteChannel chan MidiNote) {
+// PublishNotes listens for key presses and publishes MIDI notes to noteChannel until user quits
+func PublishNotes(waitGroup *sync.WaitGroup, noteChannel chan MidiNote) {
 
 	defer waitGroup.Done()
 

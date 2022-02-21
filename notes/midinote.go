@@ -2,7 +2,7 @@ package notes
 
 import "math"
 
-// MidiNote holds MIDI pitch and velocity. MidiNotes are generated from key presses by the NotePublisher func.
+// MidiNote holds MIDI pitch and velocity. MidiNotes are generated from key presses by the PublishNotes func.
 type MidiNote struct {
 	Pitch    int
 	Velocity int

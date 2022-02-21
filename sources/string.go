@@ -4,9 +4,10 @@ import (
 	"math"
 )
 
-type stringVoiceSource struct {
-	VoiceSource
+// stringSource provides attributes that define a finite-difference simulation of a vibrating string
+type stringSource struct {
 	FDTDSource
+	voiceSendChan        chan Voice
 	SampleRate           float64
 	stringLengthM        float64
 	stringWaveSpeedMPerS float64
@@ -14,22 +15,25 @@ type stringVoiceSource struct {
 	decayTimeS           float64
 }
 
-// Bilbao's loss factor
-func (s *stringVoiceSource) calculateLossFactor() float64 {
-	g := s.decayTimeS * s.SampleRate / (s.decayTimeS*s.SampleRate + 6*math.Log(10))
+// calculateLossFactor returns a loss factor used to attenuated the string vibration during synthesis
+func (s *stringSource) calculateLossFactor() float64 {
+	g := s.decayTimeS * s.SampleRate / (s.decayTimeS*s.SampleRate + 6*math.Log(10)) // Stefan Bilbao's loss factor
 	return g
 }
 
-func (s *stringVoiceSource) calculateVoiceLifetime() int {
-	return int(math.Round(s.decayTimeS*1.1)) * int(s.SampleRate)
+// calculateVoiceLifetime determines the lifetime to give to the exported Voice in samples
+func (s *stringSource) calculateVoiceLifetime() int {
+	return int(math.Round(s.decayTimeS)) * int(s.SampleRate)
 }
 
-func (s *stringVoiceSource) DispatchAndPlayVoice(freqHz float64, amplitude float64) {
+// PublishVoice packages the synthesis function as Voice struct and publishes it to the voiceChannel
+func (s *stringSource) PublishVoice(freqHz float64, amplitude float64) {
 	s.voiceSendChan <- Voice{s.Synthesize, 0, s.calculateVoiceLifetime(), false}
 	s.pluck(amplitude)
 }
 
-func (s *stringVoiceSource) Synthesize() (sampleValue float32) {
+// Synthesize simulates the state of the string at the next time stemp and generates an audio output sample
+func (s *stringSource) Synthesize() (sampleValue float32) {
 	defer s.stepGrid()
 	dt2 := math.Pow(1/s.SampleRate, 2)
 	a2 := math.Pow(s.stringWaveSpeedMPerS, 2)
@@ -45,7 +49,8 @@ func (s *stringVoiceSource) Synthesize() (sampleValue float32) {
 
 }
 
-func (s *stringVoiceSource) readPickup() float32 {
+// readPickup is used by Synthesize to generate an output sample from a chosen point on the string
+func (s *stringSource) readPickup() float32 {
 	var pickupPoint int
 	if s.pickupPositionFrac < 0.5 {
 		pickupPoint = int(math.Ceil(float64(s.numSpatialSections) * s.pickupPositionFrac))
@@ -55,12 +60,16 @@ func (s *stringVoiceSource) readPickup() float32 {
 	return float32(s.fdtdGrid[2][pickupPoint])
 }
 
-func (s *stringVoiceSource) stepGrid() {
+// stepGrid updates the finite difference simulation grid by one timestamp, providing a new, empty
+// string state for simulation with Synthesize()
+func (s *stringSource) stepGrid() {
 	s.fdtdGrid = append(s.fdtdGrid, make([]float64, s.numSpatialSections+1))
 	s.fdtdGrid = s.fdtdGrid[1:]
 }
 
-func (s *stringVoiceSource) pluck(amplitude float64) {
+// pluck sets the shape of the two previous states of the string to a triangular pluck shape, causing
+// vibration of the string
+func (s *stringSource) pluck(amplitude float64) {
 	pluckPoint := int(math.Floor(float64(len(s.fdtdGrid[0])) / 2))
 	for i := 0; i <= pluckPoint; i++ {
 		s.fdtdGrid[0][i] = amplitude * float64(i) / float64(pluckPoint)
@@ -73,8 +82,9 @@ func (s *stringVoiceSource) pluck(amplitude float64) {
 	}
 }
 
-func NewStringVoiceSource(sampleRate float64, voiceSendChan chan Voice, lengthM float64, waveSpeedMpS float64,
-	pickupPosFrac float64, decayTimeS float64) stringVoiceSource {
+// NewStringSource constructs a StringSource from the physical properties of a string
+func NewStringSource(sampleRate float64, voiceSendChan chan Voice, lengthM float64, waveSpeedMpS float64,
+	pickupPosFrac float64, decayTimeS float64) stringSource {
 
 	if pickupPosFrac < 0 {
 		pickupPosFrac = 0
@@ -83,9 +93,9 @@ func NewStringVoiceSource(sampleRate float64, voiceSendChan chan Voice, lengthM 
 	}
 
 	numSpatialSections := int(math.Floor(lengthM / (waveSpeedMpS * (1 / sampleRate)))) // Stability condition
-	s := stringVoiceSource{
-		NewVoiceSource(voiceSendChan),
+	s := stringSource{
 		NewFTDTSource(3, numSpatialSections),
+		voiceSendChan,
 		sampleRate,
 		lengthM,
 		waveSpeedMpS,
@@ -95,6 +105,7 @@ func NewStringVoiceSource(sampleRate float64, voiceSendChan chan Voice, lengthM 
 	return s
 }
 
+// FreqToStringLength converts a fundemental frequency to a string length, given a string wave speed in m/s
 func FreqToStringLength(freqHz float64, waveSpeedMpS float64) float64 {
 	return waveSpeedMpS / freqHz
 }

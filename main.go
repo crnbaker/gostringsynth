@@ -21,7 +21,7 @@ func main() {
 
 	go mixer.MixController(&wg, voiceChan, sampleRate, voiceLimit)
 	go voicedispatcher.VoiceDispatcher(&wg, noteChan, voiceChan, sampleRate, "string")
-	go notes.NotePublisher(&wg, noteChan)
+	go notes.PublishNotes(&wg, noteChan)
 
 	wg.Wait()
 }
