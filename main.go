@@ -3,10 +3,10 @@ package main
 import (
 	"sync"
 
-	"github.com/crnbaker/gostringsynth/mixer"
+	"github.com/crnbaker/gostringsynth/audioengine"
 	"github.com/crnbaker/gostringsynth/notes"
 	"github.com/crnbaker/gostringsynth/sources"
-	"github.com/crnbaker/gostringsynth/voicedispatcher"
+	"github.com/crnbaker/gostringsynth/voicepub"
 )
 
 const sampleRate = 44100
@@ -19,8 +19,8 @@ func main() {
 	voiceChan := make(chan sources.Voice)
 	noteChan := make(chan notes.MidiNote)
 
-	go mixer.MixController(&wg, voiceChan, sampleRate, voiceLimit)
-	go voicedispatcher.VoiceDispatcher(&wg, noteChan, voiceChan, sampleRate, "string")
+	go audioengine.ControlVoices(&wg, voiceChan, sampleRate, voiceLimit)
+	go voicepub.PublishVoices(&wg, noteChan, voiceChan, sampleRate, "string")
 	go notes.PublishNotes(&wg, noteChan)
 
 	wg.Wait()
