@@ -3,8 +3,8 @@ package main
 import (
 	"sync"
 
-	"github.com/crnbaker/gostringsynth/keypress"
 	"github.com/crnbaker/gostringsynth/mixer"
+	"github.com/crnbaker/gostringsynth/notes"
 	"github.com/crnbaker/gostringsynth/sources"
 	"github.com/crnbaker/gostringsynth/voicedispatcher"
 )
@@ -17,11 +17,11 @@ func main() {
 	wg.Add(3)
 
 	voiceChan := make(chan sources.Voice)
-	noteChan := make(chan keypress.MidiNote)
+	noteChan := make(chan notes.MidiNote)
 
 	go mixer.MixController(&wg, voiceChan, sampleRate, voiceLimit)
 	go voicedispatcher.VoiceDispatcher(&wg, noteChan, voiceChan, sampleRate, "string")
-	go keypress.NoteDispatcher(&wg, noteChan)
+	go notes.NotePublisher(&wg, noteChan)
 
 	wg.Wait()
 }

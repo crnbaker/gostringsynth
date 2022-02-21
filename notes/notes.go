@@ -1,4 +1,11 @@
-package keypress
+/*
+The notes package provides structs and functions for converting user input published MIDI notes.
+
+The entrypoint is NotePublisher, a function that listens for keypresses, publishing a MIDI note to
+a channel each time a key is pressed. The package also provides the MidiNote type - a struct that
+holds pitch and velocity - and functions for converting from these values to frequency and amplitude.
+*/
+package notes
 
 import (
 	"fmt"
@@ -8,6 +15,7 @@ import (
 	tty "github.com/mattn/go-tty"
 )
 
+// letterPitchMap Maps QWERTY keyboard keys to MIDI notes (in MIDI octave -2)
 var letterPitchMap = map[rune]int{
 	'a': 0,
 	'w': 1,
@@ -24,13 +32,15 @@ var letterPitchMap = map[rune]int{
 	'k': 12,
 }
 
-func NoteDispatcher(waitGroup *sync.WaitGroup, noteSendChannel chan MidiNote) {
+// NotePublisher listens for key presses and publishes MIDI notes to noteChannel until user quits
+func NotePublisher(waitGroup *sync.WaitGroup, noteChannel chan MidiNote) {
 
 	defer waitGroup.Done()
 
 	octave := 3
 	velocity := 64
 
+	// key press listener
 	tty, err := tty.Open()
 	errors.Chk(err)
 	defer tty.Close()
@@ -48,11 +58,12 @@ UserInputLoop:
 		errors.Chk(err)
 		pitch, ok := letterPitchMap[letter]
 		if ok {
-			noteSendChannel <- changeNoteOctave(newNote(pitch, velocity), octave)
+			noteChannel <- changeNoteOctave(newNote(pitch, velocity), octave)
 		} else {
 			switch letter {
 			case 'q':
-				close(noteSendChannel)
+				// Quit the app
+				close(noteChannel)
 				break UserInputLoop
 			case 'x':
 				octave++
