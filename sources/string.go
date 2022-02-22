@@ -1,6 +1,7 @@
 package sources
 
 import (
+	"fmt"
 	"math"
 )
 
@@ -29,7 +30,7 @@ func (s *stringSource) calculateVoiceLifetime() int {
 // PublishVoice packages the synthesis function as Voice struct and publishes it to the voiceChannel
 func (s *stringSource) PublishVoice(freqHz float64, amplitude float64) {
 	s.voiceSendChan <- Voice{s.Synthesize, 0, s.calculateVoiceLifetime(), false}
-	s.pluck(amplitude)
+	s.softPluck(amplitude)
 }
 
 // Synthesize simulates the state of the string at the next time stemp and generates an audio output sample
@@ -82,6 +83,34 @@ func (s *stringSource) pluck(amplitude float64) {
 	}
 }
 
+func (s *stringSource) softPluck(amplitude float64) {
+	const fingerWidthM = 0.6
+	s.pluck(amplitude)
+	if fingerWidthM < s.stringLengthM {
+		dx := s.stringLengthM / float64(s.numSpatialSections)
+		stringLengthInPoints := s.numSpatialSections + 1
+		fingerWidthInSections := fingerWidthM / dx
+		fingerHalfWidthInPoints := int(math.Round(fingerWidthInSections+1) / 2)
+		fingerWidthInPoints := fingerHalfWidthInPoints * 2
+
+		fmt.Println("Plucking with", fingerWidthInPoints, "points-wide finger")
+		fmt.Println("(", fingerWidthM, "m on a", s.stringLengthM, "m string)")
+
+		if fingerWidthInPoints > 2 {
+			var start int
+			var stop int
+
+			for i := fingerHalfWidthInPoints; i < stringLengthInPoints-fingerHalfWidthInPoints; i++ {
+				start = i - fingerHalfWidthInPoints
+				stop = i + fingerHalfWidthInPoints
+				s.fdtdGrid[0][i] = sum(s.fdtdGrid[0][start:stop]) / float64(fingerWidthInPoints)
+				s.fdtdGrid[1][i] = sum(s.fdtdGrid[1][start:stop]) / float64(fingerWidthInPoints)
+			}
+		}
+
+	}
+}
+
 // NewStringSource constructs a StringSource from the physical properties of a string
 func NewStringSource(sampleRate float64, voiceSendChan chan Voice, lengthM float64, waveSpeedMpS float64,
 	pickupPosFrac float64, decayTimeS float64) stringSource {
@@ -108,4 +137,12 @@ func NewStringSource(sampleRate float64, voiceSendChan chan Voice, lengthM float
 // FreqToStringLength converts a fundemental frequency to a string length, given a string wave speed in m/s
 func FreqToStringLength(freqHz float64, waveSpeedMpS float64) float64 {
 	return waveSpeedMpS / freqHz
+}
+
+func sum(slice []float64) float64 {
+	var sum float64 = slice[0]
+	for _, value := range slice {
+		sum += value
+	}
+	return sum
 }
