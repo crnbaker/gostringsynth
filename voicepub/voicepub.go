@@ -14,27 +14,30 @@ import (
 )
 
 // PublishVoices listens for new MIDI note on the noteInChan, spawning a source in a new goroutine for every note received.
-func PublishVoices(waitGroup *sync.WaitGroup, noteInChan chan notes.MidiNote, voiceSendChan chan sources.Voice, sampleRate float64, osc string) {
+func PublishVoices(waitGroup *sync.WaitGroup, noteInChan chan notes.MidiNote, voiceSendChan chan sources.Voice,
+	pluckPlotChan chan []float64, sampleRate float64, osc string) {
 	defer waitGroup.Done()
+	defer close(voiceSendChan)
+	defer close(pluckPlotChan)
 	for note := range noteInChan {
 		if osc == "sine" {
 			go spawnSineSource(note, voiceSendChan, sampleRate)
 		} else if osc == "string" {
-			go spawnStringSource(note, voiceSendChan, sampleRate)
+			go spawnStringSource(note, voiceSendChan, pluckPlotChan, sampleRate)
 		}
 	}
-	close(voiceSendChan)
 }
 
 // spawnSineSource constructs and configrues a finite difference string source, and publishes its Voice
 // to the voiceSendChan.
-func spawnStringSource(note notes.MidiNote, voiceSendChan chan sources.Voice, sampleRate float64) {
+func spawnStringSource(note notes.MidiNote, voiceSendChan chan sources.Voice, pluckPlotChan chan []float64, sampleRate float64) {
 	const waveSpeedMpS = 200
-	const pickupPos = 0.5
-	const decayTimeS = 3.0
+	const pickupPos = 0.2
+	const decayTimeS = 6.0
 	lengthM := sources.FreqToStringLength(notes.MidiPitchToFreq(note.Pitch), waveSpeedMpS)
 	s := sources.NewStringSource(sampleRate, voiceSendChan, lengthM, waveSpeedMpS, pickupPos, decayTimeS)
-	s.PublishVoice(notes.MidiPitchToFreq(note.Pitch), notes.MidiVelocityToAmplitude(note.Velocity))
+	pluckPlotChan <- s.SoftPluck(notes.MidiVelocityToAmplitude(note.Velocity))
+	s.PublishVoice()
 }
 
 func spawnSineSource(note notes.MidiNote, voiceSendChan chan sources.Voice, sampleRate float64) {

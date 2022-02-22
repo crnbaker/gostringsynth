@@ -1,7 +1,6 @@
 package sources
 
 import (
-	"fmt"
 	"math"
 )
 
@@ -28,9 +27,8 @@ func (s *stringSource) calculateVoiceLifetime() int {
 }
 
 // PublishVoice packages the synthesis function as Voice struct and publishes it to the voiceChannel
-func (s *stringSource) PublishVoice(freqHz float64, amplitude float64) {
+func (s *stringSource) PublishVoice() {
 	s.voiceSendChan <- Voice{s.Synthesize, 0, s.calculateVoiceLifetime(), false}
-	s.softPluck(amplitude)
 }
 
 // Synthesize simulates the state of the string at the next time stemp and generates an audio output sample
@@ -68,33 +66,16 @@ func (s *stringSource) stepGrid() {
 	s.fdtdGrid = s.fdtdGrid[1:]
 }
 
-// pluck sets the shape of the two previous states of the string to a triangular pluck shape, causing
-// vibration of the string
-func (s *stringSource) pluck(amplitude float64) {
-	pluckPoint := int(math.Floor(float64(len(s.fdtdGrid[0])) / 2))
-	for i := 0; i <= pluckPoint; i++ {
-		s.fdtdGrid[0][i] = amplitude * float64(i) / float64(pluckPoint)
-		s.fdtdGrid[1][i] = amplitude * float64(i) / float64(pluckPoint)
-	}
-	for point, i := len(s.fdtdGrid[0])-1, 0; point > pluckPoint; point, i = point-1, i+1 {
-		s.fdtdGrid[0][point] = amplitude * float64(i) / float64(pluckPoint)
-		s.fdtdGrid[1][point] = amplitude * float64(i) / float64(pluckPoint)
-		i++
-	}
-}
-
-func (s *stringSource) softPluck(amplitude float64) {
-	const fingerWidthM = 0.6
-	s.pluck(amplitude)
+func (s *stringSource) SoftPluck(amplitude float64) []float64 {
+	const fingerWidthM = 0.02
+	const pluckPosition = 0.75
+	pluck := createTrianglePluck(amplitude, s.numSpatialSections+1, pluckPosition)
 	if fingerWidthM < s.stringLengthM {
 		dx := s.stringLengthM / float64(s.numSpatialSections)
 		stringLengthInPoints := s.numSpatialSections + 1
 		fingerWidthInSections := fingerWidthM / dx
 		fingerHalfWidthInPoints := int(math.Round(fingerWidthInSections+1) / 2)
 		fingerWidthInPoints := fingerHalfWidthInPoints * 2
-
-		fmt.Println("Plucking with", fingerWidthInPoints, "points-wide finger")
-		fmt.Println("(", fingerWidthM, "m on a", s.stringLengthM, "m string)")
 
 		if fingerWidthInPoints > 2 {
 			var start int
@@ -103,12 +84,16 @@ func (s *stringSource) softPluck(amplitude float64) {
 			for i := fingerHalfWidthInPoints; i < stringLengthInPoints-fingerHalfWidthInPoints; i++ {
 				start = i - fingerHalfWidthInPoints
 				stop = i + fingerHalfWidthInPoints
-				s.fdtdGrid[0][i] = sum(s.fdtdGrid[0][start:stop]) / float64(fingerWidthInPoints)
-				s.fdtdGrid[1][i] = sum(s.fdtdGrid[1][start:stop]) / float64(fingerWidthInPoints)
+				s.fdtdGrid[0][i] = mean(pluck[start:stop])
+				s.fdtdGrid[1][i] = mean(pluck[start:stop])
 			}
 		}
 
+	} else {
+		s.fdtdGrid[0] = pluck
+		s.fdtdGrid[1] = pluck
 	}
+	return s.fdtdGrid[0]
 }
 
 // NewStringSource constructs a StringSource from the physical properties of a string
@@ -139,10 +124,23 @@ func FreqToStringLength(freqHz float64, waveSpeedMpS float64) float64 {
 	return waveSpeedMpS / freqHz
 }
 
-func sum(slice []float64) float64 {
+func mean(slice []float64) float64 {
 	var sum float64 = slice[0]
 	for _, value := range slice {
 		sum += value
 	}
-	return sum
+	return sum / float64(len(slice))
+}
+
+// trianglePluck creates a trianglePluck shape in a slice
+func createTrianglePluck(amplitude float64, length int, pluckPosFraction float64) []float64 {
+	pluckPoint := int(math.Floor(float64(length) * pluckPosFraction))
+	pluck := make([]float64, length)
+	for point := 0; point <= pluckPoint; point++ {
+		pluck[point] = amplitude * float64(point) / float64(pluckPoint)
+	}
+	for point := pluckPoint; point < length; point++ {
+		pluck[point] = amplitude * float64(length-point-1) / float64(length-pluckPoint-1)
+	}
+	return pluck
 }
