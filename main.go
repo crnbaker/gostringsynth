@@ -18,13 +18,13 @@ func main() {
 	wg.Add(4)
 
 	voiceChan := make(chan sources.Voice)
-	noteChan := make(chan notes.MidiNote)
+	noteChan := make(chan notes.StringMidiNote)
 	pluckPlotChan := make(chan []float64)
 	userSettingsChannel := make(chan notes.UserSettings)
 
 	go gui.StartUI(&wg, pluckPlotChan, userSettingsChannel)
 	go audioengine.ControlVoices(&wg, voiceChan, sampleRate, voiceLimit)
-	go voicepub.PublishVoices(&wg, noteChan, voiceChan, pluckPlotChan, sampleRate, "string")
+	go voicepub.PublishVoices(&wg, noteChan, voiceChan, pluckPlotChan, sampleRate)
 	go notes.PublishNotes(&wg, noteChan, userSettingsChannel)
 
 	wg.Wait()

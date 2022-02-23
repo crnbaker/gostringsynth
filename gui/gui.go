@@ -80,5 +80,6 @@ func NewSettingsBox(width int) SettingsBox {
 }
 
 func (s SettingsBox) Update(u notes.UserSettings) {
-	s.Text = fmt.Sprintf("Octave: %d\nVelocity: %d", u.Octave, u.Velocity)
+	s.Text = fmt.Sprintf("Octave: %d\nVelocity: %d\nPluck pos: %.3f\nPluck width: %.3f\nWave speed: %.3f\nDecay time: %.3f\nPickup pos: %.3f\n",
+		u.Octave, u.Velocity, u.PluckPos, u.PluckWidth, u.WaveSpeedMpS, u.DecayTimeS, u.PickupPos)
 }

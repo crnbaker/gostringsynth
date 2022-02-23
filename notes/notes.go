@@ -35,18 +35,22 @@ var letterPitchMap = map[rune]int{
 }
 
 type UserSettings struct {
-	Octave   int
-	Velocity int
+	MidiNoteSettings
+	StringSettings
+}
+
+func DefaultUserSettings() UserSettings {
+	return UserSettings{DefaultMidiNoteSettings(), DefaultStringSettings()}
 }
 
 // PublishNotes listens for key presses and publishes MIDI notes to noteChannel until user quits
-func PublishNotes(waitGroup *sync.WaitGroup, noteChannel chan MidiNote, userSettingsChannel chan UserSettings) {
+func PublishNotes(waitGroup *sync.WaitGroup, noteChannel chan StringMidiNote, userSettingsChannel chan UserSettings) {
 
 	defer waitGroup.Done()
 	defer close(noteChannel)
 	defer close(userSettingsChannel)
 
-	settings := UserSettings{3, 64}
+	settings := DefaultUserSettings()
 	userSettingsChannel <- settings
 
 	// key press listener
@@ -60,7 +64,7 @@ UserInputLoop:
 		errors.Chk(err)
 		pitch, ok := letterPitchMap[letter]
 		if ok {
-			noteChannel <- changeNoteOctave(newNote(pitch, settings.Velocity), settings.Octave)
+			noteChannel <- NewStringMidiNote(pitch, settings.MidiNoteSettings, settings.StringSettings)
 		} else {
 			switch letter {
 			case 'q':
