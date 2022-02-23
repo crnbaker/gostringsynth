@@ -21,12 +21,11 @@ func main() {
 	noteChan := make(chan notes.MidiNote)
 	pluckPlotChan := make(chan []float64)
 
-	go plotting.TestPlot(&wg, pluckPlotChan)
+	go plotting.StartUI(&wg, pluckPlotChan)
 	go audioengine.ControlVoices(&wg, voiceChan, sampleRate, voiceLimit)
 	go voicepub.PublishVoices(&wg, noteChan, voiceChan, pluckPlotChan, sampleRate, "string")
 	go notes.PublishNotes(&wg, noteChan)
 
 	wg.Wait()
 
-	plotting.Test()
 }

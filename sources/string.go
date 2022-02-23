@@ -67,8 +67,8 @@ func (s *stringSource) stepGrid() {
 }
 
 func (s *stringSource) SoftPluck(amplitude float64) []float64 {
-	const fingerWidthM = 0.02
-	const pluckPosition = 0.75
+	const fingerWidthM = 0.05
+	const pluckPosition = 0.5
 	pluck := createTrianglePluck(amplitude, s.numSpatialSections+1, pluckPosition)
 	if fingerWidthM < s.stringLengthM {
 		dx := s.stringLengthM / float64(s.numSpatialSections)
@@ -84,15 +84,13 @@ func (s *stringSource) SoftPluck(amplitude float64) []float64 {
 			for i := fingerHalfWidthInPoints; i < stringLengthInPoints-fingerHalfWidthInPoints; i++ {
 				start = i - fingerHalfWidthInPoints
 				stop = i + fingerHalfWidthInPoints
-				s.fdtdGrid[0][i] = mean(pluck[start:stop])
-				s.fdtdGrid[1][i] = mean(pluck[start:stop])
+				pluck[i] = mean(pluck[start:stop])
 			}
 		}
 
-	} else {
-		s.fdtdGrid[0] = pluck
-		s.fdtdGrid[1] = pluck
 	}
+	s.fdtdGrid[0] = pluck
+	s.fdtdGrid[1] = pluck
 	return s.fdtdGrid[0]
 }
 

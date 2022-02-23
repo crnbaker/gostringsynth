@@ -45,13 +45,6 @@ func PublishNotes(waitGroup *sync.WaitGroup, noteChannel chan MidiNote) {
 	errors.Chk(err)
 	defer tty.Close()
 
-	fmt.Println("Play notes with keyboard mapped across keys from A to K")
-	fmt.Println("Increase octave with X")
-	fmt.Println("Decrease octave with Z")
-	fmt.Println("Increase velocity with V")
-	fmt.Println("Decrease velocity with C")
-	fmt.Println("Q to quit")
-
 UserInputLoop:
 	for {
 		letter, err := tty.ReadRune()
