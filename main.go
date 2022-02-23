@@ -4,8 +4,8 @@ import (
 	"sync"
 
 	"github.com/crnbaker/gostringsynth/audioengine"
+	"github.com/crnbaker/gostringsynth/gui"
 	"github.com/crnbaker/gostringsynth/notes"
-	"github.com/crnbaker/gostringsynth/plotting"
 	"github.com/crnbaker/gostringsynth/sources"
 	"github.com/crnbaker/gostringsynth/voicepub"
 )
@@ -20,11 +20,12 @@ func main() {
 	voiceChan := make(chan sources.Voice)
 	noteChan := make(chan notes.MidiNote)
 	pluckPlotChan := make(chan []float64)
+	userSettingsChannel := make(chan notes.UserSettings)
 
-	go plotting.StartUI(&wg, pluckPlotChan)
+	go gui.StartUI(&wg, pluckPlotChan, userSettingsChannel)
 	go audioengine.ControlVoices(&wg, voiceChan, sampleRate, voiceLimit)
 	go voicepub.PublishVoices(&wg, noteChan, voiceChan, pluckPlotChan, sampleRate, "string")
-	go notes.PublishNotes(&wg, noteChan)
+	go notes.PublishNotes(&wg, noteChan, userSettingsChannel)
 
 	wg.Wait()
 
