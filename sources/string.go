@@ -2,28 +2,29 @@ package sources
 
 import (
 	"math"
+
+	"github.com/crnbaker/gostringsynth/numeric"
 )
 
 // stringSource provides attributes that define a finite-difference simulation of a vibrating string
 type stringSource struct {
 	FDTDSource
-	voiceSendChan        chan Voice
-	SampleRate           float64
-	stringLengthM        float64
-	stringWaveSpeedMPerS float64
-	pickupPositionFrac   float64
-	decayTimeS           float64
+	voiceSendChan chan Voice
+	SampleRate    float64
+	stringLengthM float64
+	physics       StringSettings
+	pluck         PluckSettings
 }
 
 // calculateLossFactor returns a loss factor used to attenuated the string vibration during synthesis
 func (s *stringSource) calculateLossFactor() float64 {
-	g := s.decayTimeS * s.SampleRate / (s.decayTimeS*s.SampleRate + 6*math.Log(10)) // Stefan Bilbao's loss factor
+	g := s.physics.DecayTimeS * s.SampleRate / (s.physics.DecayTimeS*s.SampleRate + 6*math.Log(10)) // Stefan Bilbao's loss factor
 	return g
 }
 
 // calculateVoiceLifetime determines the lifetime to give to the exported Voice in samples
 func (s *stringSource) calculateVoiceLifetime() int {
-	return int(math.Round(s.decayTimeS)) * int(s.SampleRate)
+	return int(math.Round(s.physics.DecayTimeS)) * int(s.SampleRate)
 }
 
 // PublishVoice packages the synthesis function as Voice struct and publishes it to the voiceChannel
@@ -35,7 +36,7 @@ func (s *stringSource) PublishVoice() {
 func (s *stringSource) Synthesize() (sampleValue float32) {
 	defer s.stepGrid()
 	dt2 := math.Pow(1/s.SampleRate, 2)
-	a2 := math.Pow(s.stringWaveSpeedMPerS, 2)
+	a2 := math.Pow(s.physics.WaveSpeedMpS, 2)
 	dx2 := math.Pow(s.stringLengthM/float64(s.numSpatialSections), 2)
 	coeff := (dt2 * a2) / dx2
 	g := s.calculateLossFactor()
@@ -51,10 +52,10 @@ func (s *stringSource) Synthesize() (sampleValue float32) {
 // readPickup is used by Synthesize to generate an output sample from a chosen point on the string
 func (s *stringSource) readPickup() float32 {
 	var pickupPoint int
-	if s.pickupPositionFrac < 0.5 {
-		pickupPoint = int(math.Ceil(float64(s.numSpatialSections) * s.pickupPositionFrac))
+	if s.physics.PickupPosReStringLen < 0.5 {
+		pickupPoint = int(math.Ceil(float64(s.numSpatialSections) * s.physics.PickupPosReStringLen))
 	} else {
-		pickupPoint = int(math.Floor(float64(s.numSpatialSections) * s.pickupPositionFrac))
+		pickupPoint = int(math.Floor(float64(s.numSpatialSections) * s.physics.PickupPosReStringLen))
 	}
 	return float32(s.fdtdGrid[2][pickupPoint])
 }
@@ -66,14 +67,17 @@ func (s *stringSource) stepGrid() {
 	s.fdtdGrid = s.fdtdGrid[1:]
 }
 
-func (s *stringSource) SoftPluck(amplitude float64) []float64 {
-	const fingerWidthM = 0.05
-	const pluckPosition = 0.5
-	pluck := createTrianglePluck(amplitude, s.numSpatialSections+1, pluckPosition)
-	if fingerWidthM < s.stringLengthM {
-		dx := s.stringLengthM / float64(s.numSpatialSections)
+type PluckSettings struct {
+	PosReStrLen   float64
+	WidthReStrLen float64
+	Amplitude     float64
+}
+
+func (s *stringSource) SoftPluck() []float64 {
+	pluckShape := createTrianglePluck(s.pluck.Amplitude, s.numSpatialSections+1, s.pluck.PosReStrLen)
+	if s.pluck.WidthReStrLen < 1.0 {
 		stringLengthInPoints := s.numSpatialSections + 1
-		fingerWidthInSections := fingerWidthM / dx
+		fingerWidthInSections := s.pluck.WidthReStrLen * float64(s.numSpatialSections)
 		fingerHalfWidthInPoints := int(math.Round(fingerWidthInSections+1) / 2)
 		fingerWidthInPoints := fingerHalfWidthInPoints * 2
 
@@ -84,35 +88,38 @@ func (s *stringSource) SoftPluck(amplitude float64) []float64 {
 			for i := fingerHalfWidthInPoints; i < stringLengthInPoints-fingerHalfWidthInPoints; i++ {
 				start = i - fingerHalfWidthInPoints
 				stop = i + fingerHalfWidthInPoints
-				pluck[i] = mean(pluck[start:stop])
+				pluckShape[i] = mean(pluckShape[start:stop])
 			}
 		}
 
 	}
-	s.fdtdGrid[0] = pluck
-	s.fdtdGrid[1] = pluck
+	s.fdtdGrid[0] = pluckShape
+	s.fdtdGrid[1] = pluckShape
 	return s.fdtdGrid[0]
 }
 
+type StringSettings struct {
+	WaveSpeedMpS         float64
+	DecayTimeS           float64
+	PickupPosReStringLen float64
+}
+
 // NewStringSource constructs a StringSource from the physical properties of a string
-func NewStringSource(sampleRate float64, voiceSendChan chan Voice, lengthM float64, waveSpeedMpS float64,
-	pickupPosFrac float64, decayTimeS float64) stringSource {
+func NewStringSource(sampleRate float64, voiceSendChan chan Voice, lengthM float64, physics StringSettings,
+	pluck PluckSettings) stringSource {
 
-	if pickupPosFrac < 0 {
-		pickupPosFrac = 0
-	} else if pickupPosFrac > 1 {
-		pickupPosFrac = 1
-	}
+	physics.PickupPosReStringLen = numeric.Clip(physics.PickupPosReStringLen, 0, 1)
+	pluck.PosReStrLen = numeric.Clip(pluck.PosReStrLen, 0, 1)
+	pluck.WidthReStrLen = numeric.Clip(pluck.WidthReStrLen, 0, 1)
 
-	numSpatialSections := int(math.Floor(lengthM / (waveSpeedMpS * (1 / sampleRate)))) // Stability condition
+	numSpatialSections := int(math.Floor(lengthM / (physics.WaveSpeedMpS * (1 / sampleRate)))) // Stability condition
 	s := stringSource{
 		NewFTDTSource(3, numSpatialSections),
 		voiceSendChan,
 		sampleRate,
 		lengthM,
-		waveSpeedMpS,
-		pickupPosFrac,
-		decayTimeS,
+		physics,
+		pluck,
 	}
 	return s
 }

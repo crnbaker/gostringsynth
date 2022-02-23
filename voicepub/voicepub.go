@@ -34,9 +34,16 @@ func spawnStringSource(note notes.MidiNote, voiceSendChan chan sources.Voice, pl
 	const waveSpeedMpS = 200
 	const pickupPos = 0.2
 	const decayTimeS = 6.0
+
+	const pluckPos = 0.8
+	const pluckWidth = 0.1
+
+	physics := sources.StringSettings{waveSpeedMpS, decayTimeS, pickupPos}
+	pluck := sources.PluckSettings{pluckPos, pluckWidth, notes.MidiVelocityToAmplitude(note.Velocity)}
+
 	lengthM := sources.FreqToStringLength(notes.MidiPitchToFreq(note.Pitch), waveSpeedMpS)
-	s := sources.NewStringSource(sampleRate, voiceSendChan, lengthM, waveSpeedMpS, pickupPos, decayTimeS)
-	pluckPlotChan <- s.SoftPluck(notes.MidiVelocityToAmplitude(note.Velocity))
+	s := sources.NewStringSource(sampleRate, voiceSendChan, lengthM, physics, pluck)
+	pluckPlotChan <- s.SoftPluck()
 	s.PublishVoice()
 }
 
