@@ -11,7 +11,7 @@ import (
 )
 
 const sampleRate = 44100
-const voiceLimit = 8
+const voiceLimit = 6
 
 func main() {
 	var wg sync.WaitGroup

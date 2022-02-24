@@ -11,7 +11,7 @@ type MidiNoteSettings struct {
 }
 
 func DefaultMidiNoteSettings() MidiNoteSettings {
-	return MidiNoteSettings{64, 3}
+	return MidiNoteSettings{64, 5}
 }
 
 // MidiNote holds MIDI pitch and velocity. MidiNotes are generated from key presses by the PublishNotes func.
@@ -27,7 +27,7 @@ type StringSettings struct {
 }
 
 func DefaultStringSettings() StringSettings {
-	return StringSettings{0.2, 0.01, 3, 0.1}
+	return StringSettings{0.3, 0.0, 6, 0.15}
 }
 
 type StringMidiNote struct {
