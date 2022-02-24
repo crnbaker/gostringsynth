@@ -1,7 +1,6 @@
-/*
-Copyright 2017 Zack Guo <zack.y.guo@gmail.com>. All rights reserved.
-// Use of this source code is governed by a MIT license that can
-// be found in the LICENSE file.
+/* The GUI package provides a termui terminal GUI for gostring synth.
+
+It only displayes information received on its input channels. User input is handled by the notes package.
 */
 
 package gui
@@ -18,7 +17,8 @@ import (
 	"github.com/gizak/termui/v3/widgets"
 )
 
-func StartUI(waitGroup *sync.WaitGroup, pluckPlotChan chan []float64, userSettingsChan chan notes.UserSettings) {
+// StartUILoop creates a GUI, and then listens for incoming pluck and settings data and displays them
+func StartUILoop(waitGroup *sync.WaitGroup, pluckPlotChan chan []float64, userSettingsChan chan notes.UserSettings) {
 	if err := ui.Init(); err != nil {
 		log.Fatalf("failed to initialize termui: %v", err)
 	}
@@ -28,10 +28,10 @@ func StartUI(waitGroup *sync.WaitGroup, pluckPlotChan chan []float64, userSettin
 	const guiWidth = 70
 	const topBoxesRatio = 0.55
 
-	plot := MakePluckPlot(guiWidth)
+	plot := makePluckPlot(guiWidth)
 	horLineBetweenBoxes := int(math.Floor(guiWidth * topBoxesRatio))
 	instructions := makeInstructionsBox(0, horLineBetweenBoxes)
-	settingsBox := NewSettingsBox(horLineBetweenBoxes, guiWidth)
+	settingsBox := newSettingsBox(horLineBetweenBoxes, guiWidth)
 
 	for pluckPlotChan != nil && userSettingsChan != nil {
 		select {
@@ -39,14 +39,14 @@ func StartUI(waitGroup *sync.WaitGroup, pluckPlotChan chan []float64, userSettin
 			if !ok {
 				pluckPlotChan = nil
 			} else if len(pluckPlot) > 0 {
-				plot.Title = fmt.Sprintf("Pluck shape (amp: %.3f)", numeric.Max(pluckPlot))
+				plot.Title = fmt.Sprintf("pluck shape (ampl.: %.3f)", numeric.Max(pluckPlot))
 				plot.Data = makePlotData(pluckPlot, guiWidth)
 			}
 		case userSettings, ok := <-userSettingsChan:
 			if !ok {
 				userSettingsChan = nil
 			} else {
-				settingsBox.Update(userSettings)
+				settingsBox.update(userSettings)
 			}
 		}
 		ui.Render(plot, instructions, settingsBox)
@@ -68,21 +68,21 @@ func makeInstructionsBox(hStart int, hStop int) *widgets.Paragraph {
 	return p
 }
 
-type SettingsBox struct {
+type settingsBox struct {
 	*widgets.Paragraph
 	settings notes.UserSettings
 }
 
-func NewSettingsBox(hStart int, hStop int) SettingsBox {
+func newSettingsBox(hStart int, hStop int) settingsBox {
 	p := widgets.NewParagraph()
 	p.Title = "parameters"
 	p.SetRect(hStart, 0, hStop, 10)
 	p.TextStyle.Fg = ui.ColorWhite
 	p.BorderStyle.Fg = ui.ColorCyan
-	return SettingsBox{p, notes.UserSettings{}}
+	return settingsBox{p, notes.UserSettings{}}
 }
 
-func (s SettingsBox) Update(u notes.UserSettings) {
+func (s settingsBox) update(u notes.UserSettings) {
 	s.Text = fmt.Sprintf(`Param.       Control   Value
 
 	Octave       z x       %d

@@ -6,12 +6,7 @@ import (
 	"gonum.org/v1/gonum/interp"
 )
 
-type pluckMarker struct {
-	pos   float64
-	width float64
-}
-
-func MakePluckPlot(width int) *widgets.Plot {
+func makePluckPlot(width int) *widgets.Plot {
 	plot := widgets.NewPlot()
 	plot.Marker = widgets.MarkerBraille
 	plot.SetRect(0, 10, width, 20)

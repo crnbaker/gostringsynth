@@ -2,45 +2,45 @@ package notes
 
 import "math"
 
-type Note interface {
-	Pitch() int
-}
-type MidiNoteSettings struct {
+type midiNoteSettings struct {
 	Velocity int
 	Octave   int
 }
 
-func DefaultMidiNoteSettings() MidiNoteSettings {
-	return MidiNoteSettings{64, 5}
+func defaultMidiNoteSettings() midiNoteSettings {
+	return midiNoteSettings{64, 5}
 }
 
-// MidiNote holds MIDI pitch and velocity. MidiNotes are generated from key presses by the PublishNotes func.
-type MidiNote struct {
-	MidiNoteSettings
+// midiNote holds MIDI pitch and velocity. MidiNotes are generated from key presses by the PublishNotes func.
+type midiNote struct {
+	midiNoteSettings
 	rawPitch int
 }
-type StringSettings struct {
+type stringSettings struct {
 	PluckPos   float64
 	PluckWidth float64
 	DecayTimeS float64
 	PickupPos  float64
 }
 
-func DefaultStringSettings() StringSettings {
-	return StringSettings{0.3, 0.0, 6, 0.15}
+func defaultStringSettings() stringSettings {
+	return stringSettings{0.3, 0.0, 6, 0.15}
 }
 
+// StringMidiNote stores midi note information and string physical properties for sending to synth module
 type StringMidiNote struct {
-	MidiNote
-	StringSettings
+	midiNote
+	stringSettings
 }
 
-func NewStringMidiNote(pitch int, midiSettings MidiNoteSettings, stringSettings StringSettings) StringMidiNote {
-	note := MidiNote{midiSettings, pitch}
-	return StringMidiNote{note, stringSettings}
+// NewStringMidiNote creates a new StringMidiNote given pitch, midi and string settings
+func NewStringMidiNote(pitch int, midiSettings midiNoteSettings, settings stringSettings) StringMidiNote {
+	note := midiNote{midiSettings, pitch}
+	return StringMidiNote{note, settings}
 }
 
-func (note *MidiNote) Pitch() int {
+// Pitch returns the pitch of a MIDI note taking into account its octave
+func (note *midiNote) Pitch() int {
 	return note.rawPitch + (note.Octave+2)*12
 }
 

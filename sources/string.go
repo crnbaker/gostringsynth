@@ -140,6 +140,11 @@ func mean(slice []float64) float64 {
 // trianglePluck creates a trianglePluck shape in a slice
 func createTrianglePluck(amplitude float64, length int, pluckPosFraction float64) []float64 {
 	pluckPoint := int(math.Floor(float64(length) * pluckPosFraction))
+	if pluckPoint < 1 {
+		pluckPoint = 1
+	} else if pluckPoint >= length {
+		pluckPoint = length - 1
+	}
 	pluck := make([]float64, length)
 	for point := 0; point <= pluckPoint; point++ {
 		pluck[point] = amplitude * float64(point) / float64(pluckPoint)

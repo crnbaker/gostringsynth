@@ -22,7 +22,7 @@ func main() {
 	pluckPlotChan := make(chan []float64)
 	userSettingsChannel := make(chan notes.UserSettings)
 
-	go gui.StartUI(&wg, pluckPlotChan, userSettingsChannel)
+	go gui.StartUILoop(&wg, pluckPlotChan, userSettingsChannel)
 	go audioengine.ControlVoices(&wg, voiceChan, sampleRate, voiceLimit)
 	go voicepub.PublishVoices(&wg, noteChan, voiceChan, pluckPlotChan, sampleRate)
 	go notes.PublishNotes(&wg, noteChan, userSettingsChannel)

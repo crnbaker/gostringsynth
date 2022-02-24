@@ -18,7 +18,7 @@ import (
 const maxOctave = 8
 const minOctave = -2
 
-// letterPitchMap Maps QWERTY keyboard keys to MIDI notes (in MIDI octave -2)
+// letterPitchMap maps QWERTY keyboard keys to MIDI notes (in MIDI octave -2)
 var letterPitchMap = map[rune]int{
 	'a': 0,
 	'w': 1,
@@ -35,13 +35,15 @@ var letterPitchMap = map[rune]int{
 	'k': 12,
 }
 
+// UserSettings stores note and string properties for sending to other software module
 type UserSettings struct {
-	MidiNoteSettings
-	StringSettings
+	midiNoteSettings
+	stringSettings
 }
 
+// DefaultUserSettings returns a UserSettings struct configured with default values
 func DefaultUserSettings() UserSettings {
-	return UserSettings{DefaultMidiNoteSettings(), DefaultStringSettings()}
+	return UserSettings{defaultMidiNoteSettings(), defaultStringSettings()}
 }
 
 // PublishNotes listens for key presses and publishes MIDI notes to noteChannel until user quits
@@ -65,7 +67,7 @@ UserInputLoop:
 		errors.Chk(err)
 		pitch, ok := letterPitchMap[letter]
 		if ok {
-			noteChannel <- NewStringMidiNote(pitch, settings.MidiNoteSettings, settings.StringSettings)
+			noteChannel <- NewStringMidiNote(pitch, settings.midiNoteSettings, settings.stringSettings)
 		} else {
 			switch letter {
 			case 'q':
@@ -98,27 +100,27 @@ UserInputLoop:
 				userSettingsChannel <- settings
 			case '.':
 				settings.PluckPos += 0.05
-				settings.PluckPos = numeric.Clip(settings.PluckPos, 0, 1)
+				settings.PluckPos = numeric.Clip(settings.PluckPos, 0.05, 0.95)
 				userSettingsChannel <- settings
 			case ',':
 				settings.PluckPos -= 0.05
-				settings.PluckPos = numeric.Clip(settings.PluckPos, 0, 1)
+				settings.PluckPos = numeric.Clip(settings.PluckPos, 0.05, 0.95)
 				userSettingsChannel <- settings
 			case '>':
 				settings.PluckWidth += 0.05
-				settings.PluckWidth = numeric.Clip(settings.PluckWidth, 0, 1)
+				settings.PluckWidth = numeric.Clip(settings.PluckWidth, 0, 0.9)
 				userSettingsChannel <- settings
 			case '<':
 				settings.PluckWidth -= 0.05
-				settings.PluckWidth = numeric.Clip(settings.PluckWidth, 0, 1)
+				settings.PluckWidth = numeric.Clip(settings.PluckWidth, 0, 0.9)
 				userSettingsChannel <- settings
 			case ']':
 				settings.PickupPos += 0.05
-				settings.PickupPos = numeric.Clip(settings.PickupPos, 0, 1)
+				settings.PickupPos = numeric.Clip(settings.PickupPos, 0.05, 0.95)
 				userSettingsChannel <- settings
 			case '[':
 				settings.PickupPos -= 0.05
-				settings.PickupPos = numeric.Clip(settings.PickupPos, 0, 1)
+				settings.PickupPos = numeric.Clip(settings.PickupPos, 0.05, 0.95)
 				userSettingsChannel <- settings
 			case '=':
 				settings.DecayTimeS += 0.2
