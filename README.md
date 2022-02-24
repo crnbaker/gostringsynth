@@ -36,6 +36,10 @@ Go dependencies:
 
 ## Usage
 
+
+https://user-images.githubusercontent.com/31904251/155550348-af1b0d86-df55-46bf-b5ad-701501388722.mov
+
+
 You can play the synth using a QWERTY keyboard with mappings the same as for [Ableton Live](https://www.ableton.com/en/manual/live-keyboard-shortcuts/#36-13-key-midi-map-mode-and-the-computer-midi-keyboard):
 * A C to C chormatic scale is mapped across keys A to K,
 * The octave is lower and raised using Z and X,
