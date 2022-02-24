@@ -3,7 +3,7 @@
 
 *gostringsynth* is a real-time, polyphonic physical-modelling synthesizer that simulates the vibration of strings using the finite-difference time-domain method. It's a standalone terminal program with a [termui](https://github.com/gizak/termui) GUI controlled and played using a PC keyboard.
 
-<img width="605" alt="image" src="https://user-images.githubusercontent.com/31904251/155532045-72c2c0b1-4fa4-4f67-8444-4793fd1edee3.png">
+<img width="603" alt="image" src="https://user-images.githubusercontent.com/31904251/155533740-ba7f8dc4-5953-4eb7-91cd-3ba251447b20.png">
 
 ### Physics
 
