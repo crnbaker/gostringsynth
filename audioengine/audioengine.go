@@ -20,47 +20,47 @@ type VoiceController struct {
 }
 
 // setStream sets a portaudio stream to a VoiceController
-func (m *VoiceController) setStream(stream *portaudio.Stream) {
-	m.Stream = stream
+func (vc *VoiceController) setStream(stream *portaudio.Stream) {
+	vc.Stream = stream
 }
 
 // stageVoice adds a Voice to the list of voices that will be enabled at the beginning of the next iteration of
 // the audio output loop
-func (m *VoiceController) stageVoice(voice sources.Voice) {
-	m.stagedVoices = append(m.stagedVoices, voice)
+func (vc *VoiceController) stageVoice(voice sources.Voice) {
+	vc.stagedVoices = append(vc.stagedVoices, voice)
 }
 
 // addVoice adds a voice to the list of currently active voices
-func (m *VoiceController) addVoice(voice sources.Voice) {
-	m.activeVoices = append(m.activeVoices, voice)
+func (vc *VoiceController) addVoice(voice sources.Voice) {
+	vc.activeVoices = append(vc.activeVoices, voice)
 }
 
 // activateStagedVoices activates all voices in the staged voices list
-func (m *VoiceController) activateStagedVoices() {
-	for _, v := range m.stagedVoices {
-		m.addVoice(v)
-		m.stagedVoices = m.stagedVoices[1:]
+func (vc *VoiceController) activateStagedVoices() {
+	for _, voice := range vc.stagedVoices {
+		vc.addVoice(voice)
+		vc.stagedVoices = vc.stagedVoices[1:]
 	}
 }
 
 // killVoice deletes a voice from the list of active voices using its index
-func (m *VoiceController) killVoice(i int) {
-	m.activeVoices = append(m.activeVoices[:i], m.activeVoices[i+1:]...)
+func (vc *VoiceController) killVoice(i int) {
+	vc.activeVoices = append(vc.activeVoices[:i], vc.activeVoices[i+1:]...)
 }
 
 // output is provided to portaudio as the audio generation callback function. It generates audio samples by
 // summing the samples provided by the synthesis functions of the currently active Voices.
-func (m *VoiceController) output(out [][]float32) {
+func (vc *VoiceController) output(out [][]float32) {
 	// Kill voices that are past their lifetime or have been "stolen"
 	numKilled := 0
-	for i, f := range m.activeVoices {
+	for i, f := range vc.activeVoices {
 		if f.ShouldDie() {
-			m.killVoice(i - numKilled)
+			vc.killVoice(i - numKilled)
 			numKilled++
 		}
 	}
 	// Activate new voices that have been staged for activation
-	m.activateStagedVoices()
+	vc.activateStagedVoices()
 
 	// Initialise buffer with zeros
 	for i := range out[0] {
@@ -69,11 +69,11 @@ func (m *VoiceController) output(out [][]float32) {
 	}
 	// Add samples values synthesized by currently active voices
 	for i := range out[0] {
-		for j, f := range m.activeVoices {
+		for j, f := range vc.activeVoices {
 			newSample := f.SynthesisFunc()
 			out[0][i] += newSample
 			out[1][i] += newSample
-			m.activeVoices[j].AgeInSamples++ // Use index because f is a copy
+			vc.activeVoices[j].AgeInSamples++ // Use index because f is a copy
 		}
 	}
 }
@@ -84,12 +84,12 @@ func newVoiceController(sampleRate float64) *VoiceController {
 
 	activeVoices := make([]sources.Voice, 0)
 	stagedVoices := make([]sources.Voice, 0)
-	mixer := &VoiceController{nil, activeVoices, stagedVoices}
+	engine := &VoiceController{nil, activeVoices, stagedVoices}
 
-	stream, err := portaudio.OpenDefaultStream(0, 2, sampleRate, 0, mixer.output)
+	stream, err := portaudio.OpenDefaultStream(0, 2, sampleRate, 0, engine.output)
 	errors.Chk(err)
-	mixer.setStream(stream)
-	return mixer
+	engine.setStream(stream)
+	return engine
 }
 
 // ControlVoices receives voices from the voiceReceiveChan and stages them for activation by the voice controller.
@@ -98,14 +98,14 @@ func newVoiceController(sampleRate float64) *VoiceController {
 func ControlVoices(waitGroup *sync.WaitGroup, voiceReceiveChan chan sources.Voice, sampleRate float64, voiceLimit int) {
 	defer waitGroup.Done()
 	portaudio.Initialize()
-	mixer := newVoiceController(sampleRate)
-	mixer.Start()
+	engine := newVoiceController(sampleRate)
+	engine.Start()
 	for f := range voiceReceiveChan {
-		if len(mixer.activeVoices) == voiceLimit {
-			mixer.activeVoices[0].KillOnNextCycle()
+		if len(engine.activeVoices) == voiceLimit {
+			engine.activeVoices[0].KillOnNextCycle()
 		}
-		mixer.stageVoice(f)
+		engine.stageVoice(f)
 	}
-	mixer.Stop()
+	engine.Stop()
 	portaudio.Terminate()
 }

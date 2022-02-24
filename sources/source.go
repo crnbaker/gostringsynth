@@ -40,8 +40,8 @@ type EnvelopedSource struct {
 }
 
 // SetEnvelope is used to change the amplitude envelope of an already-constructed EnvelopedSource
-func (g *EnvelopedSource) SetEnvelope(env envelopes.Envelope) {
-	g.envelope = env
+func (e *EnvelopedSource) SetEnvelope(env envelopes.Envelope) {
+	e.envelope = env
 }
 
 // NewEnvelopedSource constructs a new EnvelopedSource using a given envelopes.Envelope.

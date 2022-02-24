@@ -8,12 +8,15 @@ holds pitch and velocity - and functions for converting from these values to fre
 package notes
 
 import (
-	"fmt"
 	"sync"
 
 	"github.com/crnbaker/gostringsynth/errors"
+	"github.com/crnbaker/gostringsynth/numeric"
 	tty "github.com/mattn/go-tty"
 )
+
+const maxOctave = 8
+const minOctave = -2
 
 // letterPitchMap Maps QWERTY keyboard keys to MIDI notes (in MIDI octave -2)
 var letterPitchMap = map[rune]int{
@@ -32,25 +35,29 @@ var letterPitchMap = map[rune]int{
 	'k': 12,
 }
 
+type UserSettings struct {
+	MidiNoteSettings
+	StringSettings
+}
+
+func DefaultUserSettings() UserSettings {
+	return UserSettings{DefaultMidiNoteSettings(), DefaultStringSettings()}
+}
+
 // PublishNotes listens for key presses and publishes MIDI notes to noteChannel until user quits
-func PublishNotes(waitGroup *sync.WaitGroup, noteChannel chan MidiNote) {
+func PublishNotes(waitGroup *sync.WaitGroup, noteChannel chan StringMidiNote, userSettingsChannel chan UserSettings) {
 
 	defer waitGroup.Done()
+	defer close(noteChannel)
+	defer close(userSettingsChannel)
 
-	octave := 3
-	velocity := 64
+	settings := DefaultUserSettings()
+	userSettingsChannel <- settings
 
 	// key press listener
 	tty, err := tty.Open()
 	errors.Chk(err)
 	defer tty.Close()
-
-	fmt.Println("Play notes with keyboard mapped across keys from A to K")
-	fmt.Println("Increase octave with X")
-	fmt.Println("Decrease octave with Z")
-	fmt.Println("Increase velocity with V")
-	fmt.Println("Decrease velocity with C")
-	fmt.Println("Q to quit")
 
 UserInputLoop:
 	for {
@@ -58,29 +65,69 @@ UserInputLoop:
 		errors.Chk(err)
 		pitch, ok := letterPitchMap[letter]
 		if ok {
-			noteChannel <- changeNoteOctave(newNote(pitch, velocity), octave)
+			noteChannel <- NewStringMidiNote(pitch, settings.MidiNoteSettings, settings.StringSettings)
 		} else {
 			switch letter {
 			case 'q':
 				// Quit the app
-				close(noteChannel)
+				userSettingsChannel <- settings
 				break UserInputLoop
 			case 'x':
-				octave++
+				settings.Octave++
+				if settings.Octave > maxOctave {
+					settings.Octave = maxOctave
+				}
+				userSettingsChannel <- settings
 			case 'z':
-				octave--
+				settings.Octave--
+				if settings.Octave < minOctave {
+					settings.Octave = minOctave
+				}
+				userSettingsChannel <- settings
 			case 'v':
-				velocity += 5
-				if velocity > 127 {
-					velocity = 127
+				settings.Velocity += 5
+				if settings.Velocity > 127 {
+					settings.Velocity = 127
 				}
-				fmt.Println("Velocity increased to", velocity)
+				userSettingsChannel <- settings
 			case 'c':
-				velocity -= 5
-				if velocity < 0 {
-					velocity = 0
+				settings.Velocity -= 5
+				if settings.Velocity < 0 {
+					settings.Velocity = 0
 				}
-				fmt.Println("Velocity decreased to", velocity)
+				userSettingsChannel <- settings
+			case '.':
+				settings.PluckPos += 0.05
+				settings.PluckPos = numeric.Clip(settings.PluckPos, 0, 1)
+				userSettingsChannel <- settings
+			case ',':
+				settings.PluckPos -= 0.05
+				settings.PluckPos = numeric.Clip(settings.PluckPos, 0, 1)
+				userSettingsChannel <- settings
+			case '>':
+				settings.PluckWidth += 0.05
+				settings.PluckWidth = numeric.Clip(settings.PluckWidth, 0, 1)
+				userSettingsChannel <- settings
+			case '<':
+				settings.PluckWidth -= 0.05
+				settings.PluckWidth = numeric.Clip(settings.PluckWidth, 0, 1)
+				userSettingsChannel <- settings
+			case ']':
+				settings.PickupPos += 0.05
+				settings.PickupPos = numeric.Clip(settings.PickupPos, 0, 1)
+				userSettingsChannel <- settings
+			case '[':
+				settings.PickupPos -= 0.05
+				settings.PickupPos = numeric.Clip(settings.PickupPos, 0, 1)
+				userSettingsChannel <- settings
+			case '=':
+				settings.DecayTimeS += 0.2
+				settings.DecayTimeS = numeric.Clip(settings.DecayTimeS, 0.2, 10)
+				userSettingsChannel <- settings
+			case '-':
+				settings.DecayTimeS -= 0.2
+				settings.DecayTimeS = numeric.Clip(settings.DecayTimeS, 0.2, 10)
+				userSettingsChannel <- settings
 			}
 		}
 	}
