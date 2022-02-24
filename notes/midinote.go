@@ -20,15 +20,14 @@ type MidiNote struct {
 	rawPitch int
 }
 type StringSettings struct {
-	PluckPos     float64
-	PluckWidth   float64
-	WaveSpeedMpS float64
-	DecayTimeS   float64
-	PickupPos    float64
+	PluckPos   float64
+	PluckWidth float64
+	DecayTimeS float64
+	PickupPos  float64
 }
 
 func DefaultStringSettings() StringSettings {
-	return StringSettings{0.2, 0.05, 200, 3, 0.1}
+	return StringSettings{0.2, 0.01, 3, 0.1}
 }
 
 type StringMidiNote struct {

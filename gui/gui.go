@@ -27,6 +27,9 @@ func StartUI(waitGroup *sync.WaitGroup, pluckPlotChan chan []float64, userSettin
 
 	const guiWidth = 100
 
+	pluckMarker := pluckMarker{}
+	pickupPos := 0.0
+
 	plot := MakePluckPlot(guiWidth)
 	instructions := makeInstructionsBox(int(math.Floor(guiWidth / 2)))
 	settingsBox := NewSettingsBox(int(math.Floor(guiWidth / 2)))
@@ -38,14 +41,16 @@ func StartUI(waitGroup *sync.WaitGroup, pluckPlotChan chan []float64, userSettin
 				pluckPlotChan = nil
 			} else if len(pluckPlot) > 0 {
 				plot.Title = fmt.Sprintf("Pluck shape (amp: %.3f)", numeric.Max(pluckPlot))
-				plot.Data = makePlotData(pluckPlot, guiWidth)
+				plot.Data = makePlotData(pluckPlot, guiWidth, pluckMarker, pickupPos)
 			}
 		case userSettings, ok := <-userSettingsChan:
 			if !ok {
 				userSettingsChan = nil
 			} else {
 				settingsBox.Update(userSettings)
-
+				pluckMarker.pos = userSettings.PluckPos
+				pluckMarker.width = userSettings.PluckWidth
+				pickupPos = userSettings.PickupPos
 			}
 		}
 		ui.Render(plot, instructions, settingsBox)
@@ -55,10 +60,8 @@ func StartUI(waitGroup *sync.WaitGroup, pluckPlotChan chan []float64, userSettin
 func makeInstructionsBox(width int) *widgets.Paragraph {
 	p := widgets.NewParagraph()
 	p.Title = "gostringsynth"
-	p.Text = `keyboard mapped across keys from A to K
-	Octave down/up:        Z, X
-	Velocity down/up:      C, V
-	Quit:                  Q`
+	p.Text = `keyboard mapped across keys from a to k
+	Quit:                       q`
 	p.SetRect(0, 0, width, 10)
 	p.TextStyle.Fg = ui.ColorWhite
 	p.BorderStyle.Fg = ui.ColorCyan
@@ -72,7 +75,7 @@ type SettingsBox struct {
 
 func NewSettingsBox(width int) SettingsBox {
 	p := widgets.NewParagraph()
-	p.Title = "settings"
+	p.Title = "parameters"
 	p.SetRect(width, 0, 2*width, 10)
 	p.TextStyle.Fg = ui.ColorWhite
 	p.BorderStyle.Fg = ui.ColorCyan
@@ -80,6 +83,12 @@ func NewSettingsBox(width int) SettingsBox {
 }
 
 func (s SettingsBox) Update(u notes.UserSettings) {
-	s.Text = fmt.Sprintf("Octave: %d\nVelocity: %d\nPluck pos: %.3f\nPluck width: %.3f\nWave speed: %.3f\nDecay time: %.3f\nPickup pos: %.3f\n",
-		u.Octave, u.Velocity, u.PluckPos, u.PluckWidth, u.WaveSpeedMpS, u.DecayTimeS, u.PickupPos)
+	s.Text = fmt.Sprintf(`
+	Octave : %d               down/up z/x
+	Velocity: %d             down/up c/v
+	Pluck pos: %.3f         left/right ,/.
+	Pluck width: %.3f       down/up </>
+	Decay time: %.3f        down/up -/=
+	Pickup pos: %.3f        left/right [/]`,
+		u.Octave, u.Velocity, u.PluckPos, u.PluckWidth, u.DecayTimeS, u.PickupPos)
 }

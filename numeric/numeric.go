@@ -11,10 +11,10 @@ func Max(s []float64) (max float64) {
 }
 
 func Clip(value float64, min float64, max float64) float64 {
-	if value < 0 {
-		return 0
-	} else if value > 1 {
-		return 1
+	if value < min {
+		return min
+	} else if value > max {
+		return max
 	} else {
 		return value
 	}

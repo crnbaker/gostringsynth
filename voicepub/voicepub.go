@@ -26,10 +26,12 @@ func PublishVoices(waitGroup *sync.WaitGroup, noteInChan chan notes.StringMidiNo
 // to the voiceSendChan.
 func spawnStringSource(note notes.StringMidiNote, voiceSendChan chan sources.Voice, pluckPlotChan chan []float64, sampleRate float64) {
 
-	physics := sources.StringSettings{note.WaveSpeedMpS, note.DecayTimeS, note.PickupPos}
+	const wavespeed = 200
+
+	physics := sources.StringSettings{wavespeed, note.DecayTimeS, note.PickupPos}
 	pluck := sources.PluckSettings{note.PluckPos, note.PluckWidth, notes.MidiVelocityToAmplitude(note.Velocity)}
 
-	lengthM := sources.FreqToStringLength(notes.MidiPitchToFreq(note.Pitch()), note.WaveSpeedMpS)
+	lengthM := sources.FreqToStringLength(notes.MidiPitchToFreq(note.Pitch()), wavespeed)
 	s := sources.NewStringSource(sampleRate, voiceSendChan, lengthM, physics, pluck)
 	pluckPlotChan <- s.SoftPluck()
 	s.PublishVoice()

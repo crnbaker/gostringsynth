@@ -11,6 +11,7 @@ import (
 	"sync"
 
 	"github.com/crnbaker/gostringsynth/errors"
+	"github.com/crnbaker/gostringsynth/numeric"
 	tty "github.com/mattn/go-tty"
 )
 
@@ -94,6 +95,38 @@ UserInputLoop:
 				if settings.Velocity < 0 {
 					settings.Velocity = 0
 				}
+				userSettingsChannel <- settings
+			case '.':
+				settings.PluckPos += 0.05
+				settings.PluckPos = numeric.Clip(settings.PluckPos, 0, 1)
+				userSettingsChannel <- settings
+			case ',':
+				settings.PluckPos -= 0.05
+				settings.PluckPos = numeric.Clip(settings.PluckPos, 0, 1)
+				userSettingsChannel <- settings
+			case '>':
+				settings.PluckWidth += 0.05
+				settings.PluckWidth = numeric.Clip(settings.PluckWidth, 0, 1)
+				userSettingsChannel <- settings
+			case '<':
+				settings.PluckWidth -= 0.05
+				settings.PluckWidth = numeric.Clip(settings.PluckWidth, 0, 1)
+				userSettingsChannel <- settings
+			case ']':
+				settings.PickupPos += 0.05
+				settings.PickupPos = numeric.Clip(settings.PickupPos, 0, 1)
+				userSettingsChannel <- settings
+			case '[':
+				settings.PickupPos -= 0.05
+				settings.PickupPos = numeric.Clip(settings.PickupPos, 0, 1)
+				userSettingsChannel <- settings
+			case '=':
+				settings.DecayTimeS += 0.2
+				settings.DecayTimeS = numeric.Clip(settings.DecayTimeS, 0.2, 10)
+				userSettingsChannel <- settings
+			case '-':
+				settings.DecayTimeS -= 0.2
+				settings.DecayTimeS = numeric.Clip(settings.DecayTimeS, 0.2, 10)
 				userSettingsChannel <- settings
 			}
 		}
