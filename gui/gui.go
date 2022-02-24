@@ -83,7 +83,7 @@ func NewSettingsBox(hStart int, hStop int) SettingsBox {
 }
 
 func (s SettingsBox) Update(u notes.UserSettings) {
-	s.Text = fmt.Sprintf(`Param.       Control.  Value.
+	s.Text = fmt.Sprintf(`Param.       Control   Value
 
 	Octave       z x       %d
 	Velocity     c v       %d
