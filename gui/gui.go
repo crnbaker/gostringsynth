@@ -25,14 +25,13 @@ func StartUI(waitGroup *sync.WaitGroup, pluckPlotChan chan []float64, userSettin
 	defer waitGroup.Done()
 	defer ui.Close()
 
-	const guiWidth = 100
-
-	pluckMarker := pluckMarker{}
-	pickupPos := 0.0
+	const guiWidth = 70
+	const topBoxesRatio = 0.55
 
 	plot := MakePluckPlot(guiWidth)
-	instructions := makeInstructionsBox(int(math.Floor(guiWidth / 2)))
-	settingsBox := NewSettingsBox(int(math.Floor(guiWidth / 2)))
+	horLineBetweenBoxes := int(math.Floor(guiWidth * topBoxesRatio))
+	instructions := makeInstructionsBox(0, horLineBetweenBoxes)
+	settingsBox := NewSettingsBox(horLineBetweenBoxes, guiWidth)
 
 	for pluckPlotChan != nil && userSettingsChan != nil {
 		select {
@@ -41,28 +40,29 @@ func StartUI(waitGroup *sync.WaitGroup, pluckPlotChan chan []float64, userSettin
 				pluckPlotChan = nil
 			} else if len(pluckPlot) > 0 {
 				plot.Title = fmt.Sprintf("Pluck shape (amp: %.3f)", numeric.Max(pluckPlot))
-				plot.Data = makePlotData(pluckPlot, guiWidth, pluckMarker, pickupPos)
+				plot.Data = makePlotData(pluckPlot, guiWidth)
 			}
 		case userSettings, ok := <-userSettingsChan:
 			if !ok {
 				userSettingsChan = nil
 			} else {
 				settingsBox.Update(userSettings)
-				pluckMarker.pos = userSettings.PluckPos
-				pluckMarker.width = userSettings.PluckWidth
-				pickupPos = userSettings.PickupPos
 			}
 		}
 		ui.Render(plot, instructions, settingsBox)
 	}
 }
 
-func makeInstructionsBox(width int) *widgets.Paragraph {
+func makeInstructionsBox(hStart int, hStop int) *widgets.Paragraph {
 	p := widgets.NewParagraph()
 	p.Title = "gostringsynth"
-	p.Text = `keyboard mapped across keys from a to k
-	Quit:                       q`
-	p.SetRect(0, 0, width, 10)
+	p.Text = `A finite-difference time-domain string synthesiser.
+	
+	Christian Baker 2022.
+	
+	Musical keyboard mapped across keys "a" to "k"
+	Press q to quit.`
+	p.SetRect(hStart, 0, hStop, 10)
 	p.TextStyle.Fg = ui.ColorWhite
 	p.BorderStyle.Fg = ui.ColorCyan
 	return p
@@ -73,22 +73,23 @@ type SettingsBox struct {
 	settings notes.UserSettings
 }
 
-func NewSettingsBox(width int) SettingsBox {
+func NewSettingsBox(hStart int, hStop int) SettingsBox {
 	p := widgets.NewParagraph()
 	p.Title = "parameters"
-	p.SetRect(width, 0, 2*width, 10)
+	p.SetRect(hStart, 0, hStop, 10)
 	p.TextStyle.Fg = ui.ColorWhite
 	p.BorderStyle.Fg = ui.ColorCyan
 	return SettingsBox{p, notes.UserSettings{}}
 }
 
 func (s SettingsBox) Update(u notes.UserSettings) {
-	s.Text = fmt.Sprintf(`
-	Octave : %d               down/up z/x
-	Velocity: %d             down/up c/v
-	Pluck pos: %.3f         left/right ,/.
-	Pluck width: %.3f       down/up </>
-	Decay time: %.3f        down/up -/=
-	Pickup pos: %.3f        left/right [/]`,
+	s.Text = fmt.Sprintf(`Param.       Control.  Value.
+
+	Octave       z x       %d
+	Velocity     c v       %d
+	Pluck pos    , .       %.3f 
+	Pluck width  < >       %.3f
+	Decay (s)    - =       %.3f
+	Pickup pos   [ ]       %.3f`,
 		u.Octave, u.Velocity, u.PluckPos, u.PluckWidth, u.DecayTimeS, u.PickupPos)
 }

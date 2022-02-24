@@ -1,9 +1,6 @@
 package gui
 
 import (
-	"math"
-
-	"github.com/crnbaker/gostringsynth/numeric"
 	ui "github.com/gizak/termui/v3"
 	"github.com/gizak/termui/v3/widgets"
 	"gonum.org/v1/gonum/interp"
@@ -27,24 +24,10 @@ func MakePluckPlot(width int) *widgets.Plot {
 	return plot
 }
 
-func makePlotData(data []float64, figureWidth int, pluckMarker pluckMarker, pickupMarker float64) [][]float64 {
+func makePlotData(data []float64, figureWidth int) [][]float64 {
 	dataWidth := len(data)
-	plotData := make([][]float64, 3)
+	plotData := make([][]float64, 1)
 	plotData[0] = make([]float64, figureWidth)
-	plotData[1] = make([]float64, figureWidth)
-	pickupMarkerIndex := int(math.Round(pickupMarker / float64(figureWidth)))
-	plotData[1][pickupMarkerIndex] = numeric.Max(data)
-	pluckMarkerIndex := int(math.Round(pluckMarker.pos / float64(figureWidth)))
-	// pluckMarkerHalfWidth := 0.5 * pluckMarker.width / float64(figureWidth)
-	// pluckMarkerStart := int(math.Floor(float64(pluckMarkerIndex) - pluckMarkerHalfWidth))
-	// pluckMarkerStop := int(math.Floor(float64(pluckMarkerIndex) + pluckMarkerHalfWidth))
-
-	plotData[2] = make([]float64, figureWidth)
-	plotData[2][pluckMarkerIndex] = numeric.Max(data)
-	// for i := pluckMarkerStart; i <= pluckMarkerStop; i++ {
-	// 	plotData[2][i] = numeric.Max(data)
-	// }
-
 	fracOfDataLength := make([]float64, dataWidth)
 	for i := 0; i < dataWidth; i++ {
 		fracOfDataLength[i] = float64(i) / float64(dataWidth-1)

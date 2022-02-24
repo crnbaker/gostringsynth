@@ -15,7 +15,7 @@ import (
 	tty "github.com/mattn/go-tty"
 )
 
-const maxOctave = 10
+const maxOctave = 8
 const minOctave = -2
 
 // letterPitchMap Maps QWERTY keyboard keys to MIDI notes (in MIDI octave -2)
