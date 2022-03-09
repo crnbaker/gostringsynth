@@ -5,10 +5,6 @@ a reference to the synthesis function and attributes relating to the lifetim of 
 */
 package sources
 
-import (
-	"github.com/crnbaker/gostringsynth/envelopes"
-)
-
 // Source defines an interface for structs that publish an audio synthesis function.
 type Source interface {
 	PublishVoice(freqHz float64, amplitude float64)
@@ -36,15 +32,15 @@ func NewFTDTSource(numTimeSteps int, numSpatialSections int) FDTDSource {
 // oscillator-based synth sources rather that finite difference sources. EnvelopedSources are primarily
 // intended for testing and developement.
 type EnvelopedSource struct {
-	envelope envelopes.Envelope
+	envelope SourceEnvelope
 }
 
 // SetEnvelope is used to change the amplitude envelope of an already-constructed EnvelopedSource
-func (e *EnvelopedSource) SetEnvelope(env envelopes.Envelope) {
+func (e *EnvelopedSource) SetEnvelope(env SourceEnvelope) {
 	e.envelope = env
 }
 
 // NewEnvelopedSource constructs a new EnvelopedSource using a given envelopes.Envelope.
-func NewEnvelopedSource(envelope envelopes.Envelope) EnvelopedSource {
+func NewEnvelopedSource(envelope SourceEnvelope) EnvelopedSource {
 	return EnvelopedSource{envelope}
 }

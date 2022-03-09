@@ -2,8 +2,6 @@ package sources
 
 import (
 	"math"
-
-	"github.com/crnbaker/gostringsynth/envelopes"
 )
 
 type sineSource struct {
@@ -34,7 +32,7 @@ func (s *sineSource) Synthesize() (sampleValue float32) {
 	return
 }
 
-func NewSineVoiceSource(sampleRate float64, envelope envelopes.Envelope, voiceSendChan chan Voice) *sineSource {
+func NewSineVoiceSource(sampleRate float64, envelope SourceEnvelope, voiceSendChan chan Voice) *sineSource {
 	s := &sineSource{NewEnvelopedSource(envelope), voiceSendChan, sampleRate, 0, 0}
 	return s
 }
