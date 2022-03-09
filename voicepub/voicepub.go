@@ -7,12 +7,21 @@ package voicepub
 import (
 	"sync"
 
-	"github.com/crnbaker/gostringsynth/notes"
 	"github.com/crnbaker/gostringsynth/sources"
 )
 
+type StringNote interface {
+	DecayTimeS() float64
+	PickupPos() float64
+	PluckPos() float64
+	PluckWidth() float64
+	Amplitude() float64
+	LengthM() float64
+	Wavespeed() float64
+}
+
 // PublishVoices listens for new MIDI note on the noteInChan, spawning a source in a new goroutine for every note received.
-func PublishVoices(waitGroup *sync.WaitGroup, noteInChan chan notes.StringMidiNote, voiceSendChan chan sources.Voice,
+func PublishVoices(waitGroup *sync.WaitGroup, noteInChan chan StringNote, voiceSendChan chan sources.Voice,
 	pluckPlotChan chan []float64, sampleRate float64) {
 	defer waitGroup.Done()
 	defer close(voiceSendChan)
@@ -24,21 +33,15 @@ func PublishVoices(waitGroup *sync.WaitGroup, noteInChan chan notes.StringMidiNo
 
 // spawnSineSource constructs and configrues a finite difference string source, and publishes its Voice
 // to the voiceSendChan.
-func spawnStringSource(note notes.StringMidiNote, voiceSendChan chan sources.Voice, pluckPlotChan chan []float64, sampleRate float64) {
+func spawnStringSource(note StringNote, voiceSendChan chan sources.Voice, pluckPlotChan chan []float64, sampleRate float64) {
 
-	const wavespeed = 200
-
-	physics := sources.StringSettings{wavespeed, note.DecayTimeS, note.PickupPos}
-	pluck := sources.PluckSettings{note.PluckPos, note.PluckWidth, notes.MidiVelocityToAmplitude(note.Velocity)}
-
-	lengthM := sources.FreqToStringLength(notes.MidiPitchToFreq(note.Pitch()), wavespeed)
-	s := sources.NewStringSource(sampleRate, voiceSendChan, lengthM, physics, pluck)
+	physics := sources.StringSettings{
+		WaveSpeedMpS: note.Wavespeed(), DecayTimeS: note.DecayTimeS(), PickupPosReStringLen: note.PickupPos(),
+	}
+	pluck := sources.PluckSettings{
+		PosReStrLen: note.PluckPos(), WidthReStrLen: note.PluckWidth(), Amplitude: note.Amplitude(),
+	}
+	s := sources.NewStringSource(sampleRate, voiceSendChan, note.LengthM(), physics, pluck)
 	pluckPlotChan <- s.SoftPluck()
 	s.PublishVoice()
 }
-
-/* func spawnSineSource(note notes.MidiNote, voiceSendChan chan sources.Voice, sampleRate float64) {
-	envelope := envelopes.NewTriangleEnvelope(time.Millisecond*100, time.Millisecond*400, sampleRate)
-	s := sources.NewSineVoiceSource(sampleRate, envelope, voiceSendChan)
-	s.PublishVoice(notes.MidiPitchToFreq(note.Pitch()), notes.MidiVelocityToAmplitude(note.Velocity))
-} */
