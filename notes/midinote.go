@@ -3,8 +3,8 @@ package notes
 import "math"
 
 type midiNoteSettings struct {
-	Velocity int
-	Octave   int
+	velocity int
+	octave   int
 }
 
 func defaultMidiNoteSettings() midiNoteSettings {
@@ -16,40 +16,28 @@ type midiNote struct {
 	midiNoteSettings
 	rawPitch int
 }
-type stringSettings struct {
-	PluckPos   float64
-	PluckWidth float64
-	DecayTimeS float64
-	PickupPos  float64
+
+// Velocity returns the velocity value of a midi note
+func (note *midiNoteSettings) Velocity() int {
+	return note.velocity
 }
 
-func defaultStringSettings() stringSettings {
-	return stringSettings{0.3, 0.0, 6, 0.15}
-}
-
-// StringMidiNote stores midi note information and string physical properties for sending to synth module
-type StringMidiNote struct {
-	midiNote
-	stringSettings
-}
-
-// NewStringMidiNote creates a new StringMidiNote given pitch, midi and string settings
-func NewStringMidiNote(pitch int, midiSettings midiNoteSettings, settings stringSettings) StringMidiNote {
-	note := midiNote{midiSettings, pitch}
-	return StringMidiNote{note, settings}
+// Octave returns the midi octave value of a midi note
+func (note *midiNoteSettings) Octave() int {
+	return note.octave
 }
 
 // Pitch returns the pitch of a MIDI note taking into account its octave
 func (note *midiNote) Pitch() int {
-	return note.rawPitch + (note.Octave+2)*12
+	return note.rawPitch + (note.octave+2)*12
+}
+
+// Amplitude scales a note's velocity between 0 and 1 for use as a waveform amplitude
+func (note *midiNote) Amplitude() float64 {
+	return float64(note.velocity) / float64(127)
 }
 
 // MidiPitchToFreq converts a MIDI pitch to a fundemental frequency
 func MidiPitchToFreq(pitch int) float64 {
 	return math.Pow(2, ((float64(pitch)-69)/12)) * 440
-}
-
-// MidiVelocityToAmplitude converts a MIDI velocity to a normalised amplitude
-func MidiVelocityToAmplitude(velocity int) float64 {
-	return float64(velocity) / float64(127)
 }

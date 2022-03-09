@@ -3,7 +3,7 @@ package envelopes
 import "time"
 
 type triangleEnvelope struct {
-	EnvelopeImpl
+	Envelope
 }
 
 func NewTriangleEnvelope(attackTime time.Duration, decayTime time.Duration, sampleRate float64) *triangleEnvelope {

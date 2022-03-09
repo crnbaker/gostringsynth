@@ -11,14 +11,13 @@ import (
 	"math"
 	"sync"
 
-	"github.com/crnbaker/gostringsynth/notes"
 	"github.com/crnbaker/gostringsynth/numeric"
 	ui "github.com/gizak/termui/v3"
 	"github.com/gizak/termui/v3/widgets"
 )
 
 // StartUILoop creates a GUI, and then listens for incoming pluck and settings data and displays them
-func StartUILoop(waitGroup *sync.WaitGroup, pluckPlotChan chan []float64, userSettingsChan chan notes.UserSettings) {
+func StartUILoop(waitGroup *sync.WaitGroup, pluckPlotChan chan []float64, synthParamsChan chan SynthParameters) {
 	if err := ui.Init(); err != nil {
 		log.Fatalf("failed to initialize termui: %v", err)
 	}
@@ -33,7 +32,7 @@ func StartUILoop(waitGroup *sync.WaitGroup, pluckPlotChan chan []float64, userSe
 	instructions := makeInstructionsBox(0, horLineBetweenBoxes)
 	settingsBox := newSettingsBox(horLineBetweenBoxes, guiWidth)
 
-	for pluckPlotChan != nil && userSettingsChan != nil {
+	for pluckPlotChan != nil && synthParamsChan != nil {
 		select {
 		case pluckPlot, ok := <-pluckPlotChan:
 			if !ok {
@@ -42,11 +41,11 @@ func StartUILoop(waitGroup *sync.WaitGroup, pluckPlotChan chan []float64, userSe
 				plot.Title = fmt.Sprintf("pluck shape (ampl.: %.3f)", numeric.Max(pluckPlot))
 				plot.Data = makePlotData(pluckPlot, guiWidth)
 			}
-		case userSettings, ok := <-userSettingsChan:
+		case synthParameters, ok := <-synthParamsChan:
 			if !ok {
-				userSettingsChan = nil
+				synthParamsChan = nil
 			} else {
-				settingsBox.update(userSettings)
+				settingsBox.update(synthParameters)
 			}
 		}
 		ui.Render(plot, instructions, settingsBox)
@@ -68,9 +67,27 @@ func makeInstructionsBox(hStart int, hStop int) *widgets.Paragraph {
 	return p
 }
 
+type SynthParameters interface {
+	Octave() int
+	Velocity() int
+	PluckPos() float64
+	PluckWidth() float64
+	DecayTimeS() float64
+	PickupPos() float64
+}
+
+type initialSynthParameters struct{}
+
+func (p *initialSynthParameters) Octave() int         { return 0 }
+func (p *initialSynthParameters) Velocity() int       { return 0 }
+func (p *initialSynthParameters) PluckPos() float64   { return 0 }
+func (p *initialSynthParameters) PluckWidth() float64 { return 0 }
+func (p *initialSynthParameters) DecayTimeS() float64 { return 0 }
+func (p *initialSynthParameters) PickupPos() float64  { return 0 }
+
 type settingsBox struct {
 	*widgets.Paragraph
-	settings notes.UserSettings
+	settings SynthParameters
 }
 
 func newSettingsBox(hStart int, hStop int) settingsBox {
@@ -79,10 +96,10 @@ func newSettingsBox(hStart int, hStop int) settingsBox {
 	p.SetRect(hStart, 0, hStop, 10)
 	p.TextStyle.Fg = ui.ColorWhite
 	p.BorderStyle.Fg = ui.ColorCyan
-	return settingsBox{p, notes.UserSettings{}}
+	return settingsBox{p, &initialSynthParameters{}}
 }
 
-func (s settingsBox) update(u notes.UserSettings) {
+func (s settingsBox) update(u SynthParameters) {
 	s.Text = fmt.Sprintf(`Param.       Control   Value
 
 	Octave       z x       %d
@@ -91,5 +108,5 @@ func (s settingsBox) update(u notes.UserSettings) {
 	Pluck width  < >       %.3f
 	Decay (s)    - =       %.3f
 	Pickup pos   [ ]       %.3f`,
-		u.Octave, u.Velocity, u.PluckPos, u.PluckWidth, u.DecayTimeS, u.PickupPos)
+		u.Octave(), u.Velocity(), u.PluckPos(), u.PluckWidth(), u.DecayTimeS(), u.PickupPos())
 }
