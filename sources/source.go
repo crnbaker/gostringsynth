@@ -1,7 +1,8 @@
-/* The sources package provides a Source interface for defining and exporting synthesis functions.
+/* The sources package contains structs and functions for synthesising audio samples.
 
-A synthesis function is exported from a source and packaged into a Voice struct, which contains
-a reference to the synthesis function and attributes relating to the lifetim of the Voice.
+Synthesis functions are exported from the sources package inside Voice structs , which contain
+a reference to the synthesis function and attributes relating to its lifetime. The Voice
+struct is designed to conform to the SynthVoice interface required by the audioengine.
 */
 package sources
 
@@ -24,7 +25,7 @@ func newFtdtSource(numTimeSteps int, numSpatialSections int) fdtdSource {
 
 // envelopedSource provides an amplitude envelope attribute to Sources that need one, i.e. traditional
 // oscillator-based synth sources rather that finite difference sources. EnvelopedSources are primarily
-// intended for testing and developement.
+// intended for testing and development.
 type envelopedSource struct {
 	envelope SourceEnvelope
 }

@@ -27,14 +27,14 @@ func PublishVoices(waitGroup *sync.WaitGroup, noteInChan chan StringNote, voiceS
 	defer close(voiceSendChan)
 	defer close(pluckPlotChan)
 	for note := range noteInChan {
-		physics := StringSettings{
+		physics := stringSettings{
 			WaveSpeedMpS: note.WavespeedMpS(), DecayTimeS: note.DecayTimeS(), PickupPosReStringLen: note.PickupPos(),
 		}
-		pluck := PluckSettings{
+		pluck := pluckSettings{
 			PosReStrLen: note.PluckPos(), WidthReStrLen: note.PluckWidth(), Amplitude: note.Amplitude(),
 		}
-		s := NewStringSource(sampleRate, note.LengthM(), physics, pluck)
-		pluckPlotChan <- s.Pluck()
-		voiceSendChan <- s.Voice()
+		s := newStringSource(sampleRate, note.LengthM(), physics, pluck)
+		pluckPlotChan <- s.pluckString()
+		voiceSendChan <- s.createVoice()
 	}
 }

@@ -11,8 +11,8 @@ type stringSource struct {
 	fdtdSource
 	sampleRate    float64
 	stringLengthM float64
-	physics       StringSettings
-	pluck         PluckSettings
+	physics       stringSettings
+	pluck         pluckSettings
 }
 
 // calculateLossFactor returns a loss factor used to attenuated the string vibration during synthesis
@@ -26,13 +26,13 @@ func (s *stringSource) calculateVoiceLifetime() int {
 	return int(math.Round(s.physics.DecayTimeS)) * int(s.sampleRate)
 }
 
-// PublishVoice packages the synthesis function as Voice struct and publishes it to the voiceChannel
-func (s *stringSource) Voice() *Voice {
-	return &Voice{s.Synthesize, 0, s.calculateVoiceLifetime(), false}
+// PublishVoice packages the synthesis function as createVoice struct and publishes it to the voiceChannel
+func (s *stringSource) createVoice() *Voice {
+	return &Voice{s.synthesize, 0, s.calculateVoiceLifetime(), false}
 }
 
-// Synthesize simulates the state of the string at the next time stemp and generates an audio output sample
-func (s *stringSource) Synthesize() float32 {
+// synthesize simulates the state of the string at the next time stemp and generates an audio output sample
+func (s *stringSource) synthesize() float32 {
 	defer s.stepGrid()
 	dt2 := math.Pow(1/s.sampleRate, 2)
 	a2 := math.Pow(s.physics.WaveSpeedMpS, 2)
@@ -66,13 +66,13 @@ func (s *stringSource) stepGrid() {
 	s.fdtdGrid = s.fdtdGrid[1:]
 }
 
-type PluckSettings struct {
+type pluckSettings struct {
 	PosReStrLen   float64
 	WidthReStrLen float64
 	Amplitude     float64
 }
 
-func (s *stringSource) Pluck() []float64 {
+func (s *stringSource) pluckString() []float64 {
 	pluckShape := createTrianglePluck(s.pluck.Amplitude, s.numSpatialSections+1, s.pluck.PosReStrLen)
 	if s.pluck.WidthReStrLen < 1.0 {
 		stringLengthInPoints := s.numSpatialSections + 1
@@ -97,15 +97,15 @@ func (s *stringSource) Pluck() []float64 {
 	return s.fdtdGrid[0]
 }
 
-type StringSettings struct {
+type stringSettings struct {
 	WaveSpeedMpS         float64
 	DecayTimeS           float64
 	PickupPosReStringLen float64
 }
 
-// NewStringSource constructs a StringSource from the physical properties of a string
-func NewStringSource(sampleRate float64, lengthM float64, physics StringSettings,
-	pluck PluckSettings) stringSource {
+// newStringSource constructs a StringSource from the physical properties of a string
+func newStringSource(sampleRate float64, lengthM float64, physics stringSettings,
+	pluck pluckSettings) stringSource {
 
 	physics.PickupPosReStringLen = numeric.Clip(physics.PickupPosReStringLen, 0, 1)
 	pluck.PosReStrLen = numeric.Clip(pluck.PosReStrLen, 0, 1)
