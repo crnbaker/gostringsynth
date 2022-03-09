@@ -65,6 +65,7 @@ func (vc *VoiceController) output(out [][]float32) {
 			numKilled++
 		}
 	}
+
 	// Activate new voices that have been staged for activation
 	vc.activateStagedVoices()
 
@@ -82,6 +83,11 @@ func (vc *VoiceController) output(out [][]float32) {
 			vc.activeVoices[j].IncrementAgeInSamples() // Use index because f is a copy
 		}
 	}
+
+	// Get current CPU load and kill oldest voice if it's too high
+	if vc.Stream.CpuLoad() > 0.7 { // portaudio docs say reasonable to expect to use 70% or more of CPU
+		vc.killVoice(0)
+	}
 }
 
 // newVoiceController constructs a VoiceController with a portaudio stream configured to use the output function
@@ -92,7 +98,7 @@ func newVoiceController(sampleRate float64) *VoiceController {
 	stagedVoices := make([]SynthVoice, 0)
 	engine := &VoiceController{nil, activeVoices, stagedVoices}
 
-	stream, err := portaudio.OpenDefaultStream(0, 2, sampleRate, 0, engine.output)
+	stream, err := portaudio.OpenDefaultStream(0, 2, sampleRate, portaudio.FramesPerBufferUnspecified, engine.output)
 	errors.Chk(err)
 	engine.setStream(stream)
 	return engine
