@@ -58,9 +58,9 @@ func makeInstructionsBox(hStart int, hStop int) *widgets.Paragraph {
 	p.Text = `A finite-difference time-domain string synthesiser.
 	
 	Christian Baker 2022.
+	github.com/crnbaker/gostringsynth
 	
-	Musical keyboard mapped across keys "a" to "k"
-	Press q to quit.`
+	Musical keyboard mapped across keys "a" to "k", press q to quit.`
 	p.SetRect(hStart, 0, hStop, 10)
 	p.TextStyle.Fg = ui.ColorWhite
 	p.BorderStyle.Fg = ui.ColorCyan
