@@ -8,15 +8,21 @@ import (
 	"sync"
 
 	"github.com/crnbaker/gostringsynth/errors"
-	"github.com/crnbaker/gostringsynth/sources"
 	"github.com/gordonklaus/portaudio"
 )
+
+type SynthVoice interface {
+	ShouldDie() bool
+	KillOnNextCycle()
+	SynthesizeSample() float32
+	IncrementAgeInSamples()
+}
 
 // VoiceController provides a portaudio output stream and attributes for keeping track of currently enabled voices.
 type VoiceController struct {
 	*portaudio.Stream
-	activeVoices []sources.Voice
-	stagedVoices []sources.Voice
+	activeVoices []SynthVoice
+	stagedVoices []SynthVoice
 }
 
 // setStream sets a portaudio stream to a VoiceController
@@ -26,12 +32,12 @@ func (vc *VoiceController) setStream(stream *portaudio.Stream) {
 
 // stageVoice adds a Voice to the list of voices that will be enabled at the beginning of the next iteration of
 // the audio output loop
-func (vc *VoiceController) stageVoice(voice sources.Voice) {
+func (vc *VoiceController) stageVoice(voice SynthVoice) {
 	vc.stagedVoices = append(vc.stagedVoices, voice)
 }
 
 // addVoice adds a voice to the list of currently active voices
-func (vc *VoiceController) addVoice(voice sources.Voice) {
+func (vc *VoiceController) addVoice(voice SynthVoice) {
 	vc.activeVoices = append(vc.activeVoices, voice)
 }
 
@@ -70,10 +76,10 @@ func (vc *VoiceController) output(out [][]float32) {
 	// Add samples values synthesized by currently active voices
 	for i := range out[0] {
 		for j, f := range vc.activeVoices {
-			newSample := f.SynthesisFunc()
+			newSample := f.SynthesizeSample()
 			out[0][i] += newSample
 			out[1][i] += newSample
-			vc.activeVoices[j].AgeInSamples++ // Use index because f is a copy
+			vc.activeVoices[j].IncrementAgeInSamples() // Use index because f is a copy
 		}
 	}
 }
@@ -82,8 +88,8 @@ func (vc *VoiceController) output(out [][]float32) {
 // as the audio generationo callback.
 func newVoiceController(sampleRate float64) *VoiceController {
 
-	activeVoices := make([]sources.Voice, 0)
-	stagedVoices := make([]sources.Voice, 0)
+	activeVoices := make([]SynthVoice, 0)
+	stagedVoices := make([]SynthVoice, 0)
 	engine := &VoiceController{nil, activeVoices, stagedVoices}
 
 	stream, err := portaudio.OpenDefaultStream(0, 2, sampleRate, 0, engine.output)
@@ -95,7 +101,7 @@ func newVoiceController(sampleRate float64) *VoiceController {
 // ControlVoices receives voices from the voiceReceiveChan and stages them for activation by the voice controller.
 // It also implements voice stealing by marking the oldest voice for death if a maximum number of activated voices
 // is exceeded.
-func ControlVoices(waitGroup *sync.WaitGroup, voiceReceiveChan chan sources.Voice, sampleRate float64, voiceLimit int) {
+func ControlVoices(waitGroup *sync.WaitGroup, voiceReceiveChan chan SynthVoice, sampleRate float64, voiceLimit int) {
 	defer waitGroup.Done()
 	portaudio.Initialize()
 	engine := newVoiceController(sampleRate)

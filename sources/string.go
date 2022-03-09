@@ -8,9 +8,8 @@ import (
 
 // stringSource provides attributes that define a finite-difference simulation of a vibrating string
 type stringSource struct {
-	FDTDSource
-	voiceSendChan chan Voice
-	SampleRate    float64
+	fdtdSource
+	sampleRate    float64
 	stringLengthM float64
 	physics       StringSettings
 	pluck         PluckSettings
@@ -18,24 +17,24 @@ type stringSource struct {
 
 // calculateLossFactor returns a loss factor used to attenuated the string vibration during synthesis
 func (s *stringSource) calculateLossFactor() float64 {
-	g := s.physics.DecayTimeS * s.SampleRate / (s.physics.DecayTimeS*s.SampleRate + 6*math.Log(10)) // Stefan Bilbao's loss factor
+	g := s.physics.DecayTimeS * s.sampleRate / (s.physics.DecayTimeS*s.sampleRate + 6*math.Log(10)) // Stefan Bilbao's loss factor
 	return g
 }
 
 // calculateVoiceLifetime determines the lifetime to give to the exported Voice in samples
 func (s *stringSource) calculateVoiceLifetime() int {
-	return int(math.Round(s.physics.DecayTimeS)) * int(s.SampleRate)
+	return int(math.Round(s.physics.DecayTimeS)) * int(s.sampleRate)
 }
 
 // PublishVoice packages the synthesis function as Voice struct and publishes it to the voiceChannel
-func (s *stringSource) PublishVoice() {
-	s.voiceSendChan <- Voice{s.Synthesize, 0, s.calculateVoiceLifetime(), false}
+func (s *stringSource) Voice() *Voice {
+	return &Voice{s.Synthesize, 0, s.calculateVoiceLifetime(), false}
 }
 
 // Synthesize simulates the state of the string at the next time stemp and generates an audio output sample
-func (s *stringSource) Synthesize() (sampleValue float32) {
+func (s *stringSource) Synthesize() float32 {
 	defer s.stepGrid()
-	dt2 := math.Pow(1/s.SampleRate, 2)
+	dt2 := math.Pow(1/s.sampleRate, 2)
 	a2 := math.Pow(s.physics.WaveSpeedMpS, 2)
 	dx2 := math.Pow(s.stringLengthM/float64(s.numSpatialSections), 2)
 	coeff := (dt2 * a2) / dx2
@@ -73,7 +72,7 @@ type PluckSettings struct {
 	Amplitude     float64
 }
 
-func (s *stringSource) SoftPluck() []float64 {
+func (s *stringSource) Pluck() []float64 {
 	pluckShape := createTrianglePluck(s.pluck.Amplitude, s.numSpatialSections+1, s.pluck.PosReStrLen)
 	if s.pluck.WidthReStrLen < 1.0 {
 		stringLengthInPoints := s.numSpatialSections + 1
@@ -105,7 +104,7 @@ type StringSettings struct {
 }
 
 // NewStringSource constructs a StringSource from the physical properties of a string
-func NewStringSource(sampleRate float64, voiceSendChan chan Voice, lengthM float64, physics StringSettings,
+func NewStringSource(sampleRate float64, lengthM float64, physics StringSettings,
 	pluck PluckSettings) stringSource {
 
 	physics.PickupPosReStringLen = numeric.Clip(physics.PickupPosReStringLen, 0, 1)
@@ -114,8 +113,7 @@ func NewStringSource(sampleRate float64, voiceSendChan chan Voice, lengthM float
 
 	numSpatialSections := int(math.Floor(lengthM / (physics.WaveSpeedMpS * (1 / sampleRate)))) // Stability condition
 	s := stringSource{
-		NewFTDTSource(3, numSpatialSections),
-		voiceSendChan,
+		newFtdtSource(3, numSpatialSections),
 		sampleRate,
 		lengthM,
 		physics,

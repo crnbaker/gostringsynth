@@ -5,7 +5,7 @@ import (
 )
 
 type sineSource struct {
-	EnvelopedSource
+	envelopedSource
 	voiceSendChan chan Voice
 	SampleRate    float64
 	Phase, Freq   float64
@@ -33,6 +33,6 @@ func (s *sineSource) Synthesize() (sampleValue float32) {
 }
 
 func NewSineVoiceSource(sampleRate float64, envelope SourceEnvelope, voiceSendChan chan Voice) *sineSource {
-	s := &sineSource{NewEnvelopedSource(envelope), voiceSendChan, sampleRate, 0, 0}
+	s := &sineSource{newEnvelopedSource(envelope), voiceSendChan, sampleRate, 0, 0}
 	return s
 }

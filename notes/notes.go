@@ -13,7 +13,7 @@ import (
 	"github.com/crnbaker/gostringsynth/errors"
 	"github.com/crnbaker/gostringsynth/gui"
 	"github.com/crnbaker/gostringsynth/numeric"
-	"github.com/crnbaker/gostringsynth/voicepub"
+	"github.com/crnbaker/gostringsynth/sources"
 
 	tty "github.com/mattn/go-tty"
 )
@@ -50,7 +50,7 @@ func defaultUserSettings() userSettings {
 }
 
 // PublishNotes listens for key presses and publishes MIDI notes to noteChannel until user quits
-func PublishNotes(waitGroup *sync.WaitGroup, noteChannel chan voicepub.StringNote, synthParamsChan chan gui.SynthParameters) {
+func PublishNotes(waitGroup *sync.WaitGroup, noteChannel chan sources.StringNote, synthParamsChan chan gui.SynthParameters) {
 
 	defer waitGroup.Done()
 	defer close(noteChannel)

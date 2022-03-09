@@ -5,42 +5,36 @@ a reference to the synthesis function and attributes relating to the lifetim of 
 */
 package sources
 
-// Source defines an interface for structs that publish an audio synthesis function.
-type Source interface {
-	PublishVoice(freqHz float64, amplitude float64)
-	Synthesize(out [][]float32)
-}
-
-// FDTDSource provides Sources with attributes requried to perform 1D finite difference synthesis
-type FDTDSource struct {
+// fdtdSource provides Sources with attributes requried to perform 1D finite difference synthesis
+type fdtdSource struct {
 	fdtdGrid           [][]float64 // N time steps x M spatial points
 	numSpatialSections int
 	numTimeSteps       int
 }
 
-// NewFTDTSource constructs a new FDTDSource for simualtions of a given temporal and spatial size
-func NewFTDTSource(numTimeSteps int, numSpatialSections int) FDTDSource {
+// newFtdtSource constructs a new FDTDSource for simualtions of a given temporal and spatial size
+func newFtdtSource(numTimeSteps int, numSpatialSections int) fdtdSource {
 
 	fdtdGrid := make([][]float64, 3)
 	for i := range fdtdGrid {
 		fdtdGrid[i] = make([]float64, numSpatialSections+1)
 	}
-	return FDTDSource{fdtdGrid, numSpatialSections, numTimeSteps}
+	return fdtdSource{fdtdGrid, numSpatialSections, numTimeSteps}
 }
 
-// EnvelopedSource provides an amplitude envelope attribute to Sources that need one, i.e. traditional
+// envelopedSource provides an amplitude envelope attribute to Sources that need one, i.e. traditional
 // oscillator-based synth sources rather that finite difference sources. EnvelopedSources are primarily
 // intended for testing and developement.
-type EnvelopedSource struct {
+type envelopedSource struct {
 	envelope SourceEnvelope
 }
 
-// SetEnvelope is used to change the amplitude envelope of an already-constructed EnvelopedSource
-func (e *EnvelopedSource) SetEnvelope(env SourceEnvelope) {
+// setEnvelope is used to change the amplitude envelope of an already-constructed EnvelopedSource
+func (e *envelopedSource) setEnvelope(env SourceEnvelope) {
 	e.envelope = env
 }
 
-// NewEnvelopedSource constructs a new EnvelopedSource using a given envelopes.Envelope.
-func NewEnvelopedSource(envelope SourceEnvelope) EnvelopedSource {
-	return EnvelopedSource{envelope}
+// newEnvelopedSource constructs a new EnvelopedSource using a given envelopes.Envelope.
+func newEnvelopedSource(envelope SourceEnvelope) envelopedSource {
+	return envelopedSource{envelope}
 }
