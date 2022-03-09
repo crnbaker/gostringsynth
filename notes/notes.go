@@ -11,7 +11,10 @@ import (
 	"sync"
 
 	"github.com/crnbaker/gostringsynth/errors"
+	"github.com/crnbaker/gostringsynth/gui"
 	"github.com/crnbaker/gostringsynth/numeric"
+	"github.com/crnbaker/gostringsynth/voicepub"
+
 	tty "github.com/mattn/go-tty"
 )
 
@@ -35,26 +38,26 @@ var letterPitchMap = map[rune]int{
 	'k': 12,
 }
 
-// UserSettings stores note and string properties for sending to other software module
-type UserSettings struct {
+// userSettings stores note and string properties for sending to other software module
+type userSettings struct {
 	midiNoteSettings
 	stringSettings
 }
 
-// DefaultUserSettings returns a UserSettings struct configured with default values
-func DefaultUserSettings() UserSettings {
-	return UserSettings{defaultMidiNoteSettings(), defaultStringSettings()}
+// defaultUserSettings returns a UserSettings struct configured with default values
+func defaultUserSettings() userSettings {
+	return userSettings{defaultMidiNoteSettings(), defaultStringSettings()}
 }
 
 // PublishNotes listens for key presses and publishes MIDI notes to noteChannel until user quits
-func PublishNotes(waitGroup *sync.WaitGroup, noteChannel chan StringMidiNote, userSettingsChannel chan UserSettings) {
+func PublishNotes(waitGroup *sync.WaitGroup, noteChannel chan voicepub.StringNote, synthParamsChan chan gui.SynthParameters) {
 
 	defer waitGroup.Done()
 	defer close(noteChannel)
-	defer close(userSettingsChannel)
+	defer close(synthParamsChan)
 
-	settings := DefaultUserSettings()
-	userSettingsChannel <- settings
+	settings := defaultUserSettings()
+	synthParamsChan <- &settings
 
 	// key press listener
 	tty, err := tty.Open()
@@ -67,69 +70,69 @@ UserInputLoop:
 		errors.Chk(err)
 		pitch, ok := letterPitchMap[letter]
 		if ok {
-			noteChannel <- NewStringMidiNote(pitch, settings.midiNoteSettings, settings.stringSettings)
+			noteChannel <- newStringMidiNote(pitch, settings.midiNoteSettings, settings.stringSettings)
 		} else {
 			switch letter {
 			case 'q':
 				// Quit the app
-				userSettingsChannel <- settings
+				synthParamsChan <- &settings
 				break UserInputLoop
 			case 'x':
-				settings.Octave++
-				if settings.Octave > maxOctave {
-					settings.Octave = maxOctave
+				settings.octave++
+				if settings.octave > maxOctave {
+					settings.octave = maxOctave
 				}
-				userSettingsChannel <- settings
+				synthParamsChan <- &settings
 			case 'z':
-				settings.Octave--
-				if settings.Octave < minOctave {
-					settings.Octave = minOctave
+				settings.octave--
+				if settings.octave < minOctave {
+					settings.octave = minOctave
 				}
-				userSettingsChannel <- settings
+				synthParamsChan <- &settings
 			case 'v':
-				settings.Velocity += 5
-				if settings.Velocity > 127 {
-					settings.Velocity = 127
+				settings.velocity += 5
+				if settings.velocity > 127 {
+					settings.velocity = 127
 				}
-				userSettingsChannel <- settings
+				synthParamsChan <- &settings
 			case 'c':
-				settings.Velocity -= 5
-				if settings.Velocity < 0 {
-					settings.Velocity = 0
+				settings.velocity -= 5
+				if settings.velocity < 0 {
+					settings.velocity = 0
 				}
-				userSettingsChannel <- settings
+				synthParamsChan <- &settings
 			case '.':
-				settings.PluckPos += 0.05
-				settings.PluckPos = numeric.Clip(settings.PluckPos, 0.05, 0.95)
-				userSettingsChannel <- settings
+				settings.pluckPos += 0.05
+				settings.pluckPos = numeric.Clip(settings.pluckPos, 0.05, 0.95)
+				synthParamsChan <- &settings
 			case ',':
-				settings.PluckPos -= 0.05
-				settings.PluckPos = numeric.Clip(settings.PluckPos, 0.05, 0.95)
-				userSettingsChannel <- settings
+				settings.pluckPos -= 0.05
+				settings.pluckPos = numeric.Clip(settings.pluckPos, 0.05, 0.95)
+				synthParamsChan <- &settings
 			case '>':
-				settings.PluckWidth += 0.05
-				settings.PluckWidth = numeric.Clip(settings.PluckWidth, 0, 0.9)
-				userSettingsChannel <- settings
+				settings.pluckWidth += 0.05
+				settings.pluckWidth = numeric.Clip(settings.pluckWidth, 0, 0.9)
+				synthParamsChan <- &settings
 			case '<':
-				settings.PluckWidth -= 0.05
-				settings.PluckWidth = numeric.Clip(settings.PluckWidth, 0, 0.9)
-				userSettingsChannel <- settings
+				settings.pluckWidth -= 0.05
+				settings.pluckWidth = numeric.Clip(settings.pluckWidth, 0, 0.9)
+				synthParamsChan <- &settings
 			case ']':
-				settings.PickupPos += 0.05
-				settings.PickupPos = numeric.Clip(settings.PickupPos, 0.05, 0.95)
-				userSettingsChannel <- settings
+				settings.pickupPos += 0.05
+				settings.pickupPos = numeric.Clip(settings.pickupPos, 0.05, 0.95)
+				synthParamsChan <- &settings
 			case '[':
-				settings.PickupPos -= 0.05
-				settings.PickupPos = numeric.Clip(settings.PickupPos, 0.05, 0.95)
-				userSettingsChannel <- settings
+				settings.pickupPos -= 0.05
+				settings.pickupPos = numeric.Clip(settings.pickupPos, 0.05, 0.95)
+				synthParamsChan <- &settings
 			case '=':
-				settings.DecayTimeS += 0.2
-				settings.DecayTimeS = numeric.Clip(settings.DecayTimeS, 0.2, 10)
-				userSettingsChannel <- settings
+				settings.decayTimeS += 0.2
+				settings.decayTimeS = numeric.Clip(settings.decayTimeS, 0.2, 10)
+				synthParamsChan <- &settings
 			case '-':
-				settings.DecayTimeS -= 0.2
-				settings.DecayTimeS = numeric.Clip(settings.DecayTimeS, 0.2, 10)
-				userSettingsChannel <- settings
+				settings.decayTimeS -= 0.2
+				settings.decayTimeS = numeric.Clip(settings.decayTimeS, 0.2, 10)
+				synthParamsChan <- &settings
 			}
 		}
 	}

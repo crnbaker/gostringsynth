@@ -17,7 +17,7 @@ type StringNote interface {
 	PluckWidth() float64
 	Amplitude() float64
 	LengthM() float64
-	Wavespeed() float64
+	WavespeedMpS() float64
 }
 
 // PublishVoices listens for new MIDI note on the noteInChan, spawning a source in a new goroutine for every note received.
@@ -36,7 +36,7 @@ func PublishVoices(waitGroup *sync.WaitGroup, noteInChan chan StringNote, voiceS
 func spawnStringSource(note StringNote, voiceSendChan chan sources.Voice, pluckPlotChan chan []float64, sampleRate float64) {
 
 	physics := sources.StringSettings{
-		WaveSpeedMpS: note.Wavespeed(), DecayTimeS: note.DecayTimeS(), PickupPosReStringLen: note.PickupPos(),
+		WaveSpeedMpS: note.WavespeedMpS(), DecayTimeS: note.DecayTimeS(), PickupPosReStringLen: note.PickupPos(),
 	}
 	pluck := sources.PluckSettings{
 		PosReStrLen: note.PluckPos(), WidthReStrLen: note.PluckWidth(), Amplitude: note.Amplitude(),

@@ -124,11 +124,6 @@ func NewStringSource(sampleRate float64, voiceSendChan chan Voice, lengthM float
 	return s
 }
 
-// FreqToStringLength converts a fundemental frequency to a string length, given a string wave speed in m/s
-func FreqToStringLength(freqHz float64, waveSpeedMpS float64) float64 {
-	return waveSpeedMpS / freqHz
-}
-
 func mean(slice []float64) float64 {
 	var sum float64 = slice[0]
 	for _, value := range slice {
