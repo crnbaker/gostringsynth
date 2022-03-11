@@ -2,13 +2,16 @@ package sources
 
 import (
 	"math"
+	"time"
 
+	"github.com/crnbaker/gostringsynth/envelopes"
 	"github.com/crnbaker/gostringsynth/numeric"
 )
 
 // stringSource provides attributes that define a finite-difference simulation of a vibrating string
 type stringSource struct {
 	fdtdSource
+	envelopedSource
 	sampleRate    float64
 	stringLengthM float64
 	physics       stringSettings
@@ -23,7 +26,8 @@ func (s *stringSource) calculateLossFactor() float64 {
 
 // calculateVoiceLifetime determines the lifetime to give to the exported Voice in samples
 func (s *stringSource) calculateVoiceLifetime() int {
-	return int(math.Round(s.physics.DecayTimeS)) * int(s.sampleRate)
+	// return int(math.Round(s.physics.DecayTimeS)) * int(s.sampleRate)
+	return int(s.sampleRate * 2)
 }
 
 // PublishVoice packages the synthesis function as createVoice struct and publishes it to the voiceChannel
@@ -34,7 +38,9 @@ func (s *stringSource) createVoice() *Voice {
 // synthesize simulates the state of the string at the next time stemp and generates an audio output sample
 func (s *stringSource) synthesize() float32 {
 	defer s.stepGrid()
-	dt2 := math.Pow(1/s.sampleRate, 2)
+	dt := 1 / s.sampleRate
+
+	dt2 := math.Pow(dt, 2)
 	a2 := math.Pow(s.physics.WaveSpeedMpS, 2)
 	dx2 := math.Pow(s.stringLengthM/float64(s.numSpatialSections), 2)
 	coeff := (dt2 * a2) / dx2
@@ -44,6 +50,22 @@ func (s *stringSource) synthesize() float32 {
 			(coeff*(s.fdtdGrid[1][m+1]-2*s.fdtdGrid[1][m]+s.fdtdGrid[1][m-1]) +
 				2*s.fdtdGrid[1][m] - (2-1/g)*s.fdtdGrid[0][m])
 	}
+
+	bowVelocitycmps := s.envelope.GetAmplitude() * 75 // scale amplitude between 0 and 75 cm per second
+	bowDisplacement := bowVelocitycmps * dt
+	bowPosition := int(math.Floor(float64(s.numSpatialSections+1) * s.pluck.PosReStrLen))
+	stringDisplacementLastTimestep := s.fdtdGrid[2][bowPosition] - s.fdtdGrid[1][bowPosition]
+	s.envelope.Step()
+
+	// fmt.Println("bow velocity", bowVelocitycmps, "cm/s")
+	// fmt.Println("string was displaced", stringDisplacementLastTimestep, "cm")
+	// fmt.Println("string velocity was", stringDisplacementLastTimestep/dt, "cm/s")
+
+	if stringDisplacementLastTimestep >= 0.0 && stringDisplacementLastTimestep < bowDisplacement {
+		s.fdtdGrid[2][bowPosition] = s.fdtdGrid[2][bowPosition] + bowDisplacement
+		// fmt.Println("bow pulling string by", bowDisplacement, "cm")
+	}
+
 	return s.readPickup()
 
 }
@@ -114,6 +136,7 @@ func newStringSource(sampleRate float64, lengthM float64, physics stringSettings
 	numSpatialSections := int(math.Floor(lengthM / (physics.WaveSpeedMpS * (1 / sampleRate)))) // Stability condition
 	s := stringSource{
 		newFtdtSource(3, numSpatialSections),
+		newEnvelopedSource(envelopes.NewTriangleEnvelope(time.Millisecond*1000, time.Second, sampleRate)),
 		sampleRate,
 		lengthM,
 		physics,
