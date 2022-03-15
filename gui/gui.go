@@ -30,7 +30,7 @@ func StartUILoop(waitGroup *sync.WaitGroup, pluckPlotChan chan []float64, synthP
 	plot := makePluckPlot(guiWidth)
 	horLineBetweenBoxes := int(math.Floor(guiWidth * topBoxesRatio))
 	instructions := makeInstructionsBox(0, horLineBetweenBoxes)
-	settingsBox := newSettingsBox(horLineBetweenBoxes, guiWidth)
+	settingsBox := newSynthParamsBox(horLineBetweenBoxes, guiWidth)
 
 	for pluckPlotChan != nil && synthParamsChan != nil {
 		select {
@@ -38,7 +38,7 @@ func StartUILoop(waitGroup *sync.WaitGroup, pluckPlotChan chan []float64, synthP
 			if !ok {
 				pluckPlotChan = nil
 			} else if len(pluckPlot) > 0 {
-				plot.Title = fmt.Sprintf("pluck shape (ampl.: %.3f)", numeric.Max(pluckPlot))
+				plot.Title = fmt.Sprintf("pluck shape (ampl.: %.3f, num points: %3d)", numeric.Max(pluckPlot), len(pluckPlot))
 				plot.Data = makePlotData(pluckPlot, guiWidth)
 			}
 		case synthParameters, ok := <-synthParamsChan:
@@ -85,21 +85,21 @@ func (p *initialSynthParameters) PluckWidth() float64 { return 0 }
 func (p *initialSynthParameters) DecayTimeS() float64 { return 0 }
 func (p *initialSynthParameters) PickupPos() float64  { return 0 }
 
-type settingsBox struct {
+type synthParamsBox struct {
 	*widgets.Paragraph
 	settings SynthParameters
 }
 
-func newSettingsBox(hStart int, hStop int) settingsBox {
+func newSynthParamsBox(hStart int, hStop int) synthParamsBox {
 	p := widgets.NewParagraph()
-	p.Title = "parameters"
+	p.Title = "synth parameters"
 	p.SetRect(hStart, 0, hStop, 10)
 	p.TextStyle.Fg = ui.ColorWhite
 	p.BorderStyle.Fg = ui.ColorCyan
-	return settingsBox{p, &initialSynthParameters{}}
+	return synthParamsBox{p, &initialSynthParameters{}}
 }
 
-func (s settingsBox) update(u SynthParameters) {
+func (s synthParamsBox) update(u SynthParameters) {
 	s.Text = fmt.Sprintf(`Param.       Control   Value
 
 	Octave       z x       %d

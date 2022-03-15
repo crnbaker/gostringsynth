@@ -22,9 +22,9 @@ func main() {
 	userSettingsChannel := make(chan gui.SynthParameters)
 
 	go gui.StartUILoop(&wg, pluckPlotChan, userSettingsChannel)
-	go audioengine.ControlVoices(&wg, voiceChan, sampleRate, voiceLimit)
-	go sources.PublishVoices(&wg, noteChan, voiceChan, pluckPlotChan, sampleRate)
-	go notes.PublishNotes(&wg, noteChan, userSettingsChannel)
+	go audioengine.ControlVoices(&wg, voiceChan, sampleRate, voiceLimit)          // receives voices, plays sound
+	go sources.PublishVoices(&wg, noteChan, voiceChan, pluckPlotChan, sampleRate) // receives notes, sends voices
+	go notes.PublishNotes(&wg, noteChan, userSettingsChannel)                     // listens for keypresses, sends notes
 
 	wg.Wait()
 

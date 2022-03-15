@@ -8,6 +8,7 @@ import (
 	"sync"
 
 	"github.com/crnbaker/gostringsynth/audioengine"
+	"github.com/crnbaker/gostringsynth/excitors"
 )
 
 type StringNote interface {
@@ -30,11 +31,13 @@ func PublishVoices(waitGroup *sync.WaitGroup, noteInChan chan StringNote, voiceS
 		physics := stringSettings{
 			WaveSpeedMpS: note.WavespeedMpS(), DecayTimeS: note.DecayTimeS(), PickupPosReStringLen: note.PickupPos(),
 		}
-		pluck := pluckSettings{
-			PosReStrLen: note.PluckPos(), WidthReStrLen: note.PluckWidth(), Amplitude: note.Amplitude(),
-		}
-		s := newStringSource(sampleRate, note.LengthM(), physics, pluck)
+		pluck := excitors.NewFTDTPluck(
+			note.PluckPos(), note.PluckWidth(), note.Amplitude(),
+		)
+		s := newStringSource(sampleRate, note.LengthM(), physics, &pluck)
 		// pluckPlotChan <- s.pluckString()
+		s.pluckString()
+		pluckPlotChan <- make([]float64, s.numSpatialSections+1)
 		voiceSendChan <- s.createVoice()
 	}
 }
