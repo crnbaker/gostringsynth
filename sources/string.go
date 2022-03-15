@@ -16,14 +16,23 @@ type Excitor interface {
 type stringSource struct {
 	fdtdSource
 	envelopedSource
-	sampleRate    float64
-	stringLengthM float64
-	physics       stringSettings
-	pluck         Excitor
+	sampleRate        float64
+	stringLengthM     float64
+	physics           stringSettings
+	transientExcitors []Excitor
+	continousExcitors []Excitor
 }
 
-func (s *stringSource) pluckString() {
-	s.pluck.Excite(s.fdtdGrid)
+func (s *stringSource) transientExcitation() {
+	for _, e := range s.transientExcitors {
+		e.Excite(s.fdtdGrid)
+	}
+}
+
+func (s *stringSource) continuousExcitation() {
+	for _, e := range s.continousExcitors {
+		e.Excite(s.fdtdGrid)
+	}
 }
 
 // calculateLossFactor returns a loss factor used to attenuated the string vibration during synthesis
@@ -47,7 +56,7 @@ func (s *stringSource) createVoice() *Voice {
 func (s *stringSource) synthesize() float32 {
 
 	defer s.stepGrid()
-	//defer s.bowString()
+	defer s.continuousExcitation()
 
 	dt := 1 / s.sampleRate
 	dt2 := math.Pow(dt, 2)
@@ -128,7 +137,8 @@ func newStringSource(sampleRate float64, lengthM float64, physics stringSettings
 		sampleRate,
 		lengthM,
 		physics,
-		pluck,
+		[]Excitor{pluck},
+		make([]Excitor, 0),
 	}
 	return s
 }

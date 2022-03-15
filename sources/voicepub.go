@@ -35,8 +35,7 @@ func PublishVoices(waitGroup *sync.WaitGroup, noteInChan chan StringNote, voiceS
 			note.PluckPos(), note.PluckWidth(), note.Amplitude(),
 		)
 		s := newStringSource(sampleRate, note.LengthM(), physics, &pluck)
-		// pluckPlotChan <- s.pluckString()
-		s.pluckString()
+		s.transientExcitation()
 		pluckPlotChan <- make([]float64, s.numSpatialSections+1)
 		voiceSendChan <- s.createVoice()
 	}
