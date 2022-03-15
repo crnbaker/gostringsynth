@@ -5,33 +5,33 @@ import (
 	"time"
 
 	"github.com/crnbaker/gostringsynth/envelopes"
+	"github.com/crnbaker/gostringsynth/excitors"
 	"github.com/crnbaker/gostringsynth/numeric"
 )
 
 type Excitor interface {
-	Excite(FDTDGrid [][]float64)
+	Excite(source excitors.Excitable, amplitude float64)
 }
 
 // stringSource provides attributes that define a finite-difference simulation of a vibrating string
 type stringSource struct {
-	fdtdSource
+	FDTDSource
 	envelopedSource
-	sampleRate        float64
 	stringLengthM     float64
 	physics           stringSettings
 	transientExcitors []Excitor
 	continousExcitors []Excitor
 }
 
-func (s *stringSource) transientExcitation() {
-	for _, e := range s.transientExcitors {
-		e.Excite(s.fdtdGrid)
+func (s *stringSource) transientExcitation(amplitudes []float64) {
+	for i, e := range s.transientExcitors {
+		e.Excite(&s.FDTDSource, amplitudes[i])
 	}
 }
 
-func (s *stringSource) continuousExcitation() {
-	for _, e := range s.continousExcitors {
-		e.Excite(s.fdtdGrid)
+func (s *stringSource) continuousExcitation(amplitudes []float64) {
+	for i, e := range s.continousExcitors {
+		e.Excite(&s.FDTDSource, amplitudes[i])
 	}
 }
 
@@ -56,7 +56,8 @@ func (s *stringSource) createVoice() *Voice {
 func (s *stringSource) synthesize() float32 {
 
 	defer s.stepGrid()
-	defer s.continuousExcitation()
+	defer s.continuousExcitation([]float64{s.envelope.GetAmplitude()})
+	defer s.envelope.Step()
 
 	dt := 1 / s.sampleRate
 	dt2 := math.Pow(dt, 2)
@@ -98,26 +99,6 @@ type pluckSettings struct {
 	Amplitude     float64
 }
 
-type bowSettings struct {
-	PosReStringLen   float64
-	WidthReStringLen float64
-}
-
-// // bowString uses a stick-slip model to bowString an FDTD string. It must be called by synthesize.``
-// func (s *stringSource) bowString() {
-// 	bowVelocitycmps := s.envelope.GetAmplitude() * 75 // scale amplitude between 0 and 75 cm per second
-// 	bowDisplacement := bowVelocitycmps / s.sampleRate
-// 	bowPosition := int(math.Floor(float64(s.numSpatialSections) * s.pluck.PosReStrLen))
-// 	stringDisplacementLastTimestep := s.fdtdGrid[2][bowPosition] - s.fdtdGrid[1][bowPosition]
-// 	s.envelope.Step()
-// 	if stringDisplacementLastTimestep >= 0.0 && stringDisplacementLastTimestep < bowDisplacement {
-// 		s.fdtdGrid[2][bowPosition-1] = s.fdtdGrid[2][bowPosition-1] + bowDisplacement
-// 		s.fdtdGrid[2][bowPosition] = s.fdtdGrid[2][bowPosition] + bowDisplacement
-// 		s.fdtdGrid[2][bowPosition+1] = s.fdtdGrid[2][bowPosition+1] + bowDisplacement
-
-// 	}
-// }
-
 type stringSettings struct {
 	WaveSpeedMpS         float64
 	DecayTimeS           float64
@@ -126,19 +107,18 @@ type stringSettings struct {
 
 // newStringSource constructs a StringSource from the physical properties of a string
 func newStringSource(sampleRate float64, lengthM float64, physics stringSettings,
-	pluck Excitor) stringSource {
+	pluck Excitor, bow Excitor) stringSource {
 
 	physics.PickupPosReStringLen = numeric.Clip(physics.PickupPosReStringLen, 0, 1)
 
 	numSpatialSections := int(math.Floor(lengthM / (physics.WaveSpeedMpS * (1 / sampleRate)))) // Stability condition
 	s := stringSource{
-		newFtdtSource(3, numSpatialSections),
+		newFtdtSource(sampleRate, 3, numSpatialSections),
 		newEnvelopedSource(envelopes.NewTriangleEnvelope(time.Millisecond*1000, time.Second, sampleRate)),
-		sampleRate,
 		lengthM,
 		physics,
 		[]Excitor{pluck},
-		make([]Excitor, 0),
+		[]Excitor{bow},
 	}
 	return s
 }

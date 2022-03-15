@@ -6,19 +6,23 @@ import (
 	"github.com/crnbaker/gostringsynth/numeric"
 )
 
+type Excitable interface {
+	GetSampleRate() float64
+	GetFDTDGrid() [][]float64
+}
+
 type FDTDPluck struct {
 	PosReStrLen   float64
 	WidthReStrLen float64
-	Amplitude     float64
 }
 
-func NewFTDTPluck(PosReStrLen float64, WidthReStrLen float64, Amplitude float64) FDTDPluck {
-	return FDTDPluck{PosReStrLen, WidthReStrLen, Amplitude}
+func NewFTDTPluck(PosReStrLen float64, WidthReStrLen float64) FDTDPluck {
+	return FDTDPluck{PosReStrLen, WidthReStrLen}
 }
 
-func (p *FDTDPluck) Excite(fdtdGrid [][]float64) {
-	numSpatialPoints := len(fdtdGrid[0])
-	pluckShape := createTrianglePluck(p.Amplitude, numSpatialPoints, p.PosReStrLen)
+func (p *FDTDPluck) Excite(source Excitable, amplitude float64) {
+	numSpatialPoints := len(source.GetFDTDGrid()[0])
+	pluckShape := createTrianglePluck(amplitude, numSpatialPoints, p.PosReStrLen)
 	if p.WidthReStrLen < 1.0 {
 		fingerWidthInSections := p.WidthReStrLen * float64(numSpatialPoints-1)
 		fingerHalfWidthInPoints := int(math.Round(fingerWidthInSections+1) / 2)
@@ -36,8 +40,8 @@ func (p *FDTDPluck) Excite(fdtdGrid [][]float64) {
 		}
 
 	}
-	fdtdGrid[0] = pluckShape
-	fdtdGrid[1] = pluckShape
+	source.GetFDTDGrid()[0] = pluckShape
+	source.GetFDTDGrid()[1] = pluckShape
 }
 
 // trianglePluck creates a trianglePluck shape in a slice

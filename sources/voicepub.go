@@ -32,10 +32,12 @@ func PublishVoices(waitGroup *sync.WaitGroup, noteInChan chan StringNote, voiceS
 			WaveSpeedMpS: note.WavespeedMpS(), DecayTimeS: note.DecayTimeS(), PickupPosReStringLen: note.PickupPos(),
 		}
 		pluck := excitors.NewFTDTPluck(
-			note.PluckPos(), note.PluckWidth(), note.Amplitude(),
+			note.PluckPos(), note.PluckWidth(),
 		)
-		s := newStringSource(sampleRate, note.LengthM(), physics, &pluck)
-		s.transientExcitation()
+		bow := excitors.NewFTDTBow(note.PluckPos(), note.PluckWidth())
+		s := newStringSource(sampleRate, note.LengthM(), physics, &pluck, &bow)
+		s.transientExcitation([]float64{note.Amplitude()})
+
 		pluckPlotChan <- make([]float64, s.numSpatialSections+1)
 		voiceSendChan <- s.createVoice()
 	}
